@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
+    <title>🌍 Senegal Quiz</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(160deg, #00853F 0%, #FDEF42 55%, #E31B23 100%);
+        }
+        .screen { display: none; }
+        .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px 16px; }
+        .card {
+            background: white; border-radius: 28px; padding: 32px 24px;
+            max-width: 420px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25); text-align: center;
+        }
+        .flag {
+            display: flex; width: 80px; height: 54px; border-radius: 8px;
+            overflow: hidden; margin: 0 auto 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: 1px solid #e5e7eb;
+        }
+        .flag-g { flex:1; background:#00853F; }
+        .flag-y { flex:1; background:#FDEF42; display:flex; align-items:center; justify-content:center; }
+        .flag-y span { color:#00853F; font-size:22px; line-height:1; }
+        .flag-r { flex:1; background:#E31B23; }
+        h1 { font-size: 28px; font-weight: 900; color: #1a1a1a; margin-bottom: 4px; }
+        .subtitle { color: #6b7280; font-size: 14px; margin-bottom: 24px; }
+        .categories-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .cat-badge { border-radius: 12px; padding: 10px 12px; text-align: left; border: 1px solid; }
+        .cat-emoji { font-size: 18px; margin-bottom: 4px; display: block; }
+        .cat-name { font-size: 11px; font-weight: 700; }
+        .c-geo  { background:#f0fdf4; border-color:#86efac; } .c-geo  .cat-name { color:#15803d; }
+        .c-hist { background:#fffbeb; border-color:#fcd34d; } .c-hist .cat-name { color:#b45309; }
+        .c-volk { background:#fef2f2; border-color:#fca5a5; } .c-volk .cat-name { color:#b91c1c; }
+        .c-kult { background:#faf5ff; border-color:#d8b4fe; } .c-kult .cat-name { color:#7c3aed; }
+        .c-nat  { background:#ecfdf5; border-color:#6ee7b7; } .c-nat  .cat-name { color:#047857; }
+        .c-wirt { background:#fefce8; border-color:#fde047; } .c-wirt .cat-name { color:#854d0e; }
+        .info-box {
+            background: #f9fafb; border-radius: 12px; padding: 12px;
+            font-size: 13px; color: #6b7280; margin-bottom: 24px;
+        }
+        .info-box strong { color: #1a1a1a; }
+        .btn-primary {
+            width: 100%; background: linear-gradient(90deg,#00853F,#00a04a);
+            color: white; font-size: 17px; font-weight: 700; padding: 16px;
+            border: none; border-radius: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-family: inherit; transition: transform 0.1s; margin-bottom: 10px;
+        }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-back {
+            width: 100%; background: transparent;
+            color: #6b7280; font-size: 14px; font-weight: 700; padding: 10px;
+            border: none; border-radius: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: inherit;
+        }
+
+        /* Quiz Screen */
+        #quizScreen { align-items: stretch; padding: 16px; justify-content: flex-start; padding-top: 32px; }
+        #quizScreen .inner { max-width: 480px; margin: 0 auto; width: 100%; }
+        .prog-top { display:flex; justify-content:space-between; color:white; font-size:13px; font-weight:600; margin-bottom:8px; }
+        .prog-track { width:100%; height:8px; background:rgba(255,255,255,0.3); border-radius:99px; overflow:hidden; margin-bottom:16px; }
+        .prog-fill { height:8px; background:white; border-radius:99px; transition:width 0.4s ease; }
+        .quiz-card { background:white; border-radius:24px; padding:24px; box-shadow:0 16px 48px rgba(0,0,0,0.2); }
+        .cat-pill {
+            display:inline-flex; align-items:center; gap:6px;
+            border-radius:99px; padding:4px 12px; font-size:11px; font-weight:700;
+            border:1px solid; margin-bottom:16px;
+        }
+        .question-text { font-size:16px; font-weight:700; color:#1a1a1a; line-height:1.4; margin-bottom:20px; }
+        .answers { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+        .answer-btn {
+            width:100%; background:#f9fafb; border:2px solid #e5e7eb; border-radius:14px;
+            padding:14px 16px; display:flex; align-items:center; gap:12px;
+            cursor:pointer; text-align:left; font-family:inherit;
+            transition:border-color 0.15s, background 0.15s, transform 0.1s;
+        }
+        .answer-btn:active:not(:disabled) { transform:scale(0.98); }
+        .answer-btn:disabled { cursor:default; }
+        .answer-btn.a-correct { background:#dcfce7 !important; border-color:#22c55e !important; }
+        .answer-btn.a-wrong   { background:#fee2e2 !important; border-color:#ef4444 !important; }
+        .answer-btn.a-dimmed  { opacity:0.4; }
+        .ans-letter {
+            width:28px; height:28px; border-radius:50%; background:#e5e7eb;
+            display:flex; align-items:center; justify-content:center;
+            font-size:12px; font-weight:700; color:#374151; flex-shrink:0;
+        }
+        .ans-text { flex:1; font-size:14px; font-weight:500; color:#1a1a1a; line-height:1.3; }
+        .ans-icon { font-size:18px; flex-shrink:0; min-width:20px; }
+        .feedback-box {
+            border-radius:14px; padding:14px; margin-bottom:16px; border:1px solid;
+            display:none; animation:fadeUp 0.25s ease;
+        }
+        .feedback-box.show { display:block; }
+        .fb-correct { background:#f0fdf4; border-color:#86efac; }
+        .fb-wrong   { background:#fef2f2; border-color:#fca5a5; }
+        .fb-title { font-size:14px; font-weight:700; margin-bottom:8px; }
+        .fb-fact  { font-size:13px; color:#374151; line-height:1.5; }
+        .btn-next {
+            width:100%; background:linear-gradient(90deg,#00853F,#00a04a);
+            color:white; font-size:15px; font-weight:700; padding:14px;
+            border:none; border-radius:14px; cursor:pointer;
+            display:none; align-items:center; justify-content:center; gap:6px;
+            font-family:inherit; animation:fadeUp 0.25s ease;
+        }
+        .btn-next.show { display:flex; }
+        .btn-next:active { transform:scale(0.97); }
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(10px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Results */
+        .result-icon  { font-size:64px; margin-bottom:12px; }
+        .result-title { font-size:26px; font-weight:900; color:#1a1a1a; margin-bottom:6px; }
+        .result-msg   { color:#6b7280; font-size:14px; margin-bottom:24px; }
+        .result-score { font-size:56px; font-weight:900; color:#00853F; line-height:1; margin-bottom:4px; }
+        .result-pct   { font-size:22px; font-weight:700; color:#9ca3af; margin-bottom:20px; }
+        .result-track { width:100%; height:14px; background:#e5e7eb; border-radius:99px; overflow:hidden; margin-bottom:24px; }
+        .result-fill  { height:14px; background:linear-gradient(90deg,#00853F,#FDEF42); border-radius:99px; transition:width 1.2s cubic-bezier(0.22,1,0.36,1); }
+    </style>
+</head>
+<body>
+
+<!-- Welcome -->
+<div id="welcomeScreen" class="screen active">
+    <div class="card">
+        <div style="font-size:48px;margin-bottom:8px;">🌍</div>
+        <div class="flag"><div class="flag-g"></div><div class="flag-y"><span>★</span></div><div class="flag-r"></div></div>
+        <h1>Senegal Quiz</h1>
+        <p class="subtitle">Wie viel weißt du über dieses faszinierende Land in Westafrika?</p>
+        <div class="categories-grid">
+            <div class="cat-badge c-geo"> <span class="cat-emoji">🗺️</span><span class="cat-name">Geographie</span></div>
+            <div class="cat-badge c-hist"><span class="cat-emoji">📜</span><span class="cat-name">Geschichte</span></div>
+            <div class="cat-badge c-volk"><span class="cat-emoji">👥</span><span class="cat-name">Völker & Sprachen</span></div>
+            <div class="cat-badge c-kult"><span class="cat-emoji">🎵</span><span class="cat-name">Kultur & Alltag</span></div>
+            <div class="cat-badge c-nat"> <span class="cat-emoji">🌿</span><span class="cat-name">Natur & Tiere</span></div>
+            <div class="cat-badge c-wirt"><span class="cat-emoji">💰</span><span class="cat-name">Wirtschaft</span></div>
+        </div>
+        <div class="info-box"><strong>50 Fragen</strong> · Geographie · Geschichte · Kultur · Natur · Wirtschaft</div>
+        <button class="btn-primary" onclick="startGame()">Jetzt spielen! 🚀</button>
+        <button class="btn-back" onclick="window.location.href='index.html'">← Zurück zur Übersicht</button>
+    </div>
+</div>
+
+<!-- Quiz -->
+<div id="quizScreen" class="screen">
+    <div class="inner">
+        <div class="prog-top">
+            <span id="qCounter">Frage 1 / 50</span>
+            <span id="cCounter">✅ 0 richtig</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+        <div class="quiz-card">
+            <div class="cat-pill" id="catPill"></div>
+            <div class="question-text" id="qText"></div>
+            <div class="answers" id="answersDiv"></div>
+            <div class="feedback-box" id="fbBox">
+                <div class="fb-title" id="fbTitle"></div>
+                <div class="fb-fact"  id="fbFact"></div>
+            </div>
+            <button class="btn-next" id="nextBtn" onclick="nextQ()">
+                <span id="nextTxt">Weiter ➜</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Results -->
+<div id="resultsScreen" class="screen">
+    <div class="card">
+        <div class="result-icon"  id="rIcon"></div>
+        <div class="result-title" id="rTitle"></div>
+        <div class="result-msg"   id="rMsg"></div>
+        <div class="result-score" id="rScore"></div>
+        <div class="result-pct"   id="rPct"></div>
+        <div class="result-track"><div class="result-fill" id="rFill" style="width:0%"></div></div>
+        <div class="flag" style="margin-bottom:24px;">
+            <div class="flag-g"></div><div class="flag-y"><span>★</span></div><div class="flag-r"></div>
+        </div>
+        <button class="btn-primary" onclick="startGame()">🔄 Nochmal spielen!</button>
+        <button class="btn-back" onclick="window.location.href='index.html'">← Zurück zur Übersicht</button>
+    </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+const CAT = {
+    "Geographie":        { cls:"c-geo",  emoji:"🗺️", bg:"#f0fdf4", border:"#86efac", color:"#15803d" },
+    "Geschichte":        { cls:"c-hist", emoji:"📜", bg:"#fffbeb", border:"#fcd34d", color:"#b45309" },
+    "Völker & Sprachen": { cls:"c-volk", emoji:"👥", bg:"#fef2f2", border:"#fca5a5", color:"#b91c1c" },
+    "Kultur & Alltag":   { cls:"c-kult", emoji:"🎵", bg:"#faf5ff", border:"#d8b4fe", color:"#7c3aed" },
+    "Natur & Tiere":     { cls:"c-nat",  emoji:"🌿", bg:"#ecfdf5", border:"#6ee7b7", color:"#047857" },
+    "Wirtschaft":        { cls:"c-wirt", emoji:"💰", bg:"#fefce8", border:"#fde047", color:"#854d0e" },
+};
+
+const QS = [
+  {cat:"Geographie",        q:"Was ist die Hauptstadt des Senegals?",                                                               a:["Dakar","Saint-Louis","Thiès","Kaolack"],                                   c:0, f:"Dakar liegt auf der Halbinsel Cap-Vert – dem westlichsten Punkt des gesamten afrikanischen Festlands!"},
+  {cat:"Geographie",        q:"Welcher Fluss bildet die nördliche Grenze des Senegals zu Mauretanien?",                             a:["Gambia-Fluss","Casamance-Fluss","Senegal-Fluss","Falémé-Fluss"],           c:2, f:"Der Senegal-Fluss gab dem Land seinen Namen. Er ist ca. 1.800 km lang und entspringt in Guinea."},
+  {cat:"Geographie",        q:"Welches Land liegt fast vollständig INNERHALB des Senegals?",                                        a:["Guinea-Bissau","Gambia","Mali","Mauretanien"],                              c:1, f:"Gambia ist wie ein Finger, der in den Senegal hineinragt – nur zur Atlantikküste hat es direkten Zugang!"},
+  {cat:"Geographie",        q:"Wie viele Länder grenzen direkt an den Senegal?",                                                    a:["3","4","5","6"],                                                           c:2, f:"Die 5 Nachbarn: Mauretanien (N), Mali (O), Guinea (SO), Guinea-Bissau (SW) und Gambia (inmitten des Landes)."},
+  {cat:"Geographie",        q:"An welchem Ozean liegt der Senegal?",                                                                a:["Indischer Ozean","Pazifischer Ozean","Nordpolarmeer","Atlantischer Ozean"], c:3, f:"Die senegalesische Atlantikküste ist über 700 km lang – mit traumhaften Stränden und fischreichen Gewässern."},
+  {cat:"Geographie",        q:"Welche Farben hat die Nationalflagge des Senegals?",                                                 a:["Rot, Weiß, Blau","Grün, Gelb, Rot","Schwarz, Grün, Gelb","Blau, Weiß, Grün"], c:1, f:"Grün = Islam & Hoffnung, Gelb = Reichtum des Landes, Rot = Leben & Opfer der Vorfahren."},
+  {cat:"Geographie",        q:"Was ist auf der Mitte der senegalesischen Flagge abgebildet?",                                       a:["Ein Löwe","Ein Baobab-Baum","Ein grüner Stern","Eine Sonne"],               c:2, f:"Der grüne Stern symbolisiert die Einheit des Volkes und steht auch für den Islam."},
+  {cat:"Geographie",        q:"Wie heißt die älteste europäisch gegründete Stadt des Senegals (gegründet 1659)?",                   a:["Thiès","Kaolack","Saint-Louis","Ziguinchor"],                               c:2, f:"Saint-Louis war lange Hauptstadt von Französisch-Westafrika und ist heute UNESCO-Weltkulturerbe."},
+  {cat:"Geographie",        q:"Welcher Fluss fließt durch die südliche Casamance-Region?",                                         a:["Niger","Casamance-Fluss","Volta","Benue"],                                  c:1, f:"Der Casamance-Fluss macht den Süden Senegals viel grüner als den Rest – fast wie ein tropischer Regenwald!"},
+  {cat:"Geographie",        q:"Welche ist die zweitgrößte Stadt des Senegals?",                                                    a:["Touba","Thiès","Ziguinchor","Tambacounda"],                                 c:1, f:"Thiès ist ein wichtiges Eisenbahn- und Industriezentrum und liegt nur 70 km östlich von Dakar."},
+  {cat:"Geschichte",        q:"Wann erlangte der Senegal seine Unabhängigkeit von Frankreich?",                                    a:["4. April 1960","17. März 1950","1. Januar 1970","14. Juli 1958"],           c:0, f:"Der 4. April ist der senegalesische Nationalfeiertag – jedes Jahr gibt es eine riesige Militärparade in Dakar!"},
+  {cat:"Geschichte",        q:"Wer war der erste Präsident des unabhängigen Senegals?",                                            a:["Abdou Diouf","Léopold Sédar Senghor","Abdoulaye Wade","Macky Sall"],       c:1, f:"Senghor (1906–2001) war nicht nur Politiker, sondern auch ein weltberühmter Dichter – er trat 1980 freiwillig zurück!"},
+  {cat:"Geschichte",        q:"Welches mittelalterliche Großreich existierte im heutigen Senegal (14.–16. Jh.)?",                  a:["Das Jolof-Reich","Das Osman-Reich","Das Pharaonenreich","Das Azteken-Reich"], c:0, f:"Das Jolof-Reich war ein mächtiges Wolof-Königreich, das große Teile des heutigen Senegals beherrschte."},
+  {cat:"Geschichte",        q:"Welche Europäer erkundeten als Erste die senegalesische Küste (um 1444)?",                         a:["Spanier","Briten","Holländer","Portugiesen"],                               c:3, f:"Portugiesische Seefahrer erreichten Westafrika um 1444 – einer der ersten Kontakte zwischen Europa und dieser Region."},
+  {cat:"Geschichte",        q:"Wofür ist die Insel Gorée vor Dakar historisch bekannt?",                                          a:["Goldgewinnung","Sklavenhandel","Erste Universität Afrikas","Piratenbasis"],  c:1, f:"Gorée war eines der wichtigsten Zentren des Sklavenhandels. Millionen wurden von hier nach Amerika verschleppt. Heute UNESCO-Welterbe."},
+  {cat:"Geschichte",        q:"Mit welchem Land bildete Senegal 1982–1989 die Senegambia-Konföderation?",                          a:["Mali","Mauretanien","Gambia","Guinea"],                                     c:2, f:"Die Konföderation scheiterte an politischen Unstimmigkeiten – Senegal und Gambia blieben aber enge Nachbarn."},
+  {cat:"Geschichte",        q:"Wie hieß das französische Kolonialgebiet, zu dem der Senegal gehörte?",                            a:["Französ.-Äquatorialafrika","Britisch-Ostafrika","Französ.-Westafrika","Deutsch-Ostafrika"], c:2, f:"Französisch-Westafrika umfasste 8 Kolonien, und Dakar war die Hauptstadt dieses riesigen Gebiets."},
+  {cat:"Geschichte",        q:"El Hadj Umar Tall gründete im 19. Jahrhundert ein islamisches Reich. Wie hieß es?",                a:["Songhai-Reich","Toucouleur-Reich","Benin-Reich","Ashanti-Reich"],           c:1, f:"El Hadj Umar Tall kämpfte mutig gegen die französische Kolonisierung und gilt bis heute als Held Westafrikas."},
+  {cat:"Geschichte",        q:"Wie lautet ein möglicher Ursprung des Namens 'Senegal'?",                                          a:["'Land der Löwen' auf Wolof","'Sunuu Gaal' (unser Boot) auf Wolof","Vom portug. Wort für Süden","Name eines alten Königs"], c:1, f:"Der Legende nach sagten Fischer 'Sunuu Gaal' (unser Kanu) zu portugiesischen Seefahrern – so entstand der Name!"},
+  {cat:"Geschichte",        q:"Welche Religionen sind im Senegal verbreitet?",                                                    a:["Nur Christentum","Nur Islam","Hauptsächlich Islam, kl. christl. Minderheit","Buddhismus und Islam"], c:2, f:"Ca. 96% der Bevölkerung sind Muslime, ca. 4% Christen – beide Gruppen leben meist sehr friedlich zusammen."},
+  {cat:"Völker & Sprachen", q:"Welches ist das zahlenmäßig größte Volk im Senegal?",                                              a:["Serer","Diola","Fulbe (Peul)","Wolof"],                                     c:3, f:"Die Wolof machen ca. 43% der Bevölkerung aus und sind dominant in Dakar und im Zentrum des Landes."},
+  {cat:"Völker & Sprachen", q:"Was ist die offizielle Amtssprache des Senegals?",                                                 a:["Wolof","Arabisch","Französisch","Englisch"],                                c:2, f:"Französisch ist Amtssprache seit der Kolonialzeit, aber nur ca. 20% sprechen es fließend. Wolof ist die echte Alltagssprache."},
+  {cat:"Völker & Sprachen", q:"Was sind Griots?",                                                                                 a:["Fischerboote","Traditionelle Sänger & Geschichtenerzähler","Religiöse Führer","Stammeskönige"], c:1, f:"Griots sind das lebende Gedächtnis Westafrikas – sie kennen die Geschichte und Genealogien ganzer Völker auswendig!"},
+  {cat:"Völker & Sprachen", q:"Was bedeutet das senegalesische Wort 'Teranga'?",                                                  a:["Tapferkeit","Reichtum","Gastfreundschaft","Freiheit"],                     c:2, f:"Teranga ist der wichtigste Wert Senegals. Fremde werden wie Ehrengäste behandelt – das spürt jeder Besucher sofort!"},
+  {cat:"Völker & Sprachen", q:"Welches Volk ist traditionell für seine nomadische Viehzucht bekannt?",                            a:["Wolof","Serer","Fulbe (Peul)","Diola"],                                     c:2, f:"Die Fulbe (auch Peul oder Fula) sind seit Jahrhunderten nomadische Hirten und leben in ganz West- und Zentralafrika."},
+  {cat:"Völker & Sprachen", q:"Léopold Sédar Senghor, der erste Präsident, gehörte welchem Volk an?",                            a:["Wolof","Diola","Serer","Mandinka"],                                         c:2, f:"Als Christ und Serer-Angehöriger wurde Senghor in einem mehrheitlich muslimischen Wolof-Land Präsident – bemerkenswert!"},
+  {cat:"Völker & Sprachen", q:"Welches Volk lebt hauptsächlich in der südlichen Casamance-Region?",                              a:["Wolof","Mandinka","Diola (Jola)","Soninke"],                                c:2, f:"Die Diola sind für ihre Reisanbau-Kultur bekannt und führten jahrzehntelang einen Autonomiekonflikt in der Casamance."},
+  {cat:"Völker & Sprachen", q:"Wie viele Nationalsprachen erkennt der Senegal offiziell an?",                                    a:["2","4","6","12"],                                                           c:2, f:"Die 6 Nationalsprachen: Wolof, Pulaar, Serer, Diola, Mandinka und Soninke – alle gleichberechtigt anerkannt."},
+  {cat:"Völker & Sprachen", q:"Wie nennt man die mächtigen islamischen Bruderschaften im Senegal?",                              a:["Tariqa (Sufi-Bruderschaften)","Stammes-Clans","Geheimbünde","Militärorden"], c:0, f:"Die Mourides und Tijaniyya sind die wichtigsten Bruderschaften – ihr Einfluss auf Politik und Wirtschaft ist enorm!"},
+  {cat:"Völker & Sprachen", q:"Wie sagt man 'Wie geht es dir?' auf Wolof?",                                                      a:["Bonjour","Salaam Aleykoum","Nanga def?","Manggi dem"],                     c:2, f:"'Nanga def?' heißt 'Wie geht es dir?' auf Wolof. Die typische Antwort ist 'Maa ngi fi rekk' (Es geht mir gut)."},
+  {cat:"Kultur & Alltag",   q:"Wie heißt das Nationalgericht des Senegals (Fisch + Reis + Gemüse)?",                             a:["Fufu","Thiéboudienne","Injera","Egusi-Suppe"],                              c:1, f:"Thiéboudienne ist DAS senegalesische Gericht. Manche Historiker sagen, das weltbekannte 'Jollof Rice' stammt von hier!"},
+  {cat:"Kultur & Alltag",   q:"Welcher weltberühmte Sänger aus Dakar machte den Musikstil 'Mbalax' international bekannt?",     a:["Salif Keïta","Fela Kuti","Youssou N'Dour","Baaba Maal"],                   c:2, f:"Youssou N'Dour (geb. 1959) ist einer der meistgehörten Sänger der Welt und war sogar Minister für Kultur!"},
+  {cat:"Kultur & Alltag",   q:"Welcher traditionelle Kampfsport ist nach Fußball der beliebteste Zuschauersport?",              a:["Boxen","Lutte sénégalaise (Ringen)","Judo","Taekwondo"],                   c:1, f:"Das senegalesische Ringen verbindet Sport mit Tanz und Ritual – Kämpfer treten vor bis zu 50.000 begeisterten Fans an!"},
+  {cat:"Kultur & Alltag",   q:"Welcher Musikstil ist typisch senegalesisch und kombiniert Trommeln mit modernen Klängen?",      a:["Reggae","Mbalax","Afrobeats","Highlife"],                                   c:1, f:"Mbalax lebt von den Sabar-Trommeln, dem Wolof-Gesang und einem mitreißenden Rhythmus – einmalig auf der Welt!"},
+  {cat:"Kultur & Alltag",   q:"Was ist ein 'Boubou'?",                                                                          a:["Ein Fischereiboot","Ein traditionelles farbenprächtiges Gewand","Eine Trommelart","Ein Tanzmove"], c:1, f:"Der Boubou ist das klassische westafrikanische Gewand aus buntem Stoff – getragen bei Festen und Hochzeiten."},
+  {cat:"Kultur & Alltag",   q:"Welches besondere Instrument spielen Griots, das 21 Saiten hat?",                                a:["Gitarre","Geige","Kora","Balafon"],                                         c:2, f:"Die Kora klingt wie eine Harfe und sieht aus wie eine Laute. Ihr Klang ist einzigartig schön – ein Symbol Westafrikas."},
+  {cat:"Kultur & Alltag",   q:"Wie heißt die heilige Stadt der Mourides-Bruderschaft, die jährlich Millionen Pilger empfängt?", a:["Dakar","Thiès","Touba","Kaolack"],                                          c:2, f:"Beim jährlichen Magal-Pilgermarsch in Touba kommen über 3 Millionen Menschen – einer der größten Pilgermärsche weltweit!"},
+  {cat:"Kultur & Alltag",   q:"Wie heißt die traditionelle senegalesische Trommel der Wolof?",                                  a:["Djembé","Sabar","Talking Drum","Kpanlogo"],                                 c:1, f:"Die Sabar-Trommel ist das Herz der Wolof-Musik. Es gibt eigene Rhythmen für Geburten, Hochzeiten und Beerdigungen."},
+  {cat:"Kultur & Alltag",   q:"Was ist 'Attaya' im Senegal?",                                                                   a:["Ein traditioneller Tanz","Ein Fischgericht","Die senegalesische Teezeremonie","Ein Musikinstrument"], c:2, f:"Attaya ist eine zeitintensive Teezeremonie mit 3 Runden grünem Minztee – Zeit für Gespräche und Gemeinschaft."},
+  {cat:"Kultur & Alltag",   q:"Welche Farbe tragen senegalesische Männer häufig bei Festen, da sie Reinheit symbolisiert?",     a:["Rot","Weiß","Blau","Schwarz"],                                              c:1, f:"Weiß ist die Farbe des Islam und der Reinheit – bei Freitagsgebeten und Festen sieht man viele weiße Boubous."},
+  {cat:"Natur & Tiere",     q:"Wie heißt der größte Nationalpark des Senegals (UNESCO-Weltnaturerbe)?",                         a:["Djoudj Park","Niokolo-Koba","Saloum Delta","Langue de Barbarie"],           c:1, f:"Niokolo-Koba ist gigantisch (913.000 ha!) und beherbergt Löwen, Elefanten, Flusspferde und Schimpansen."},
+  {cat:"Natur & Tiere",     q:"Was macht den 'Lac Rose' (Rosa See) so besonders?",                                              a:["Er friert im Winter ein","Er ist durch Algen und Salz rosa gefärbt","Er ist künstlich angelegt","Er leuchtet nachts"], c:1, f:"Der Lac Rose ist 10x salziger als das Meer! Spezielle Bakterien und Algen geben ihm seine rosa Farbe."},
+  {cat:"Natur & Tiere",     q:"Welcher Baum gilt als Symbol Senegals und kann Tausende von Jahren alt werden?",                 a:["Mammutbaum","Affenbrotbaum (Baobab)","Zeder","Eukalyptus"],                 c:1, f:"Der Baobab kann bis zu 2.000 Jahre alt und 10 Meter dick werden – alle Teile sind nutzbar: Früchte, Blätter, Rinde!"},
+  {cat:"Natur & Tiere",     q:"Welches UNESCO-Vogelschutzgebiet im Norden empfängt jährlich Millionen Zugvögel aus Europa?",    a:["Okefenokee","Camargue","Djoudj-Schutzgebiet","Biebrza"],                   c:2, f:"Djoudj empfängt jährlich ca. 3 Millionen Zugvögel! Pelikane, Flamingos und Kormorane überwintern hier."},
+  {cat:"Natur & Tiere",     q:"Welche Klimazonen gibt es im Senegal?",                                                          a:["Nur Sahara-Wüste","Sahelzone im Norden, feuchte Savanne im Süden","Nur tropischer Regenwald","Kalt und polar"], c:1, f:"Von Nord nach Süd wird es immer grüner: Die Casamance ist fast tropisch, der Norden grenzt an die Sahara."},
+  {cat:"Natur & Tiere",     q:"Welches UNESCO-geschützte Flussdelta hat Mangroven, Inseln und uralte Muschelberge?",            a:["Gambia-Delta","Niger-Delta","Saloum-Delta","Casamance-Delta"],              c:2, f:"Das Saloum-Delta ist ein Labyrinth aus Wasserarmen und Mangroven. Die Muschelberge der Vorfahren sind einzigartig!"},
+  {cat:"Natur & Tiere",     q:"Wie nennt man die bunten senegalesischen Fischerboote?",                                         a:["Dhaus","Pirogen (Pirogues)","Katamarane","Sampans"],                        c:1, f:"Die farbenprächtigen Pirogen sind DAS Symbol der Fischer – mutige Männer fahren damit sogar bis zu den Kanarischen Inseln!"},
+  {cat:"Natur & Tiere",     q:"Welche gefährdete Großaffenart lebt noch im Niokolo-Koba Nationalpark?",                         a:["Gorilla","Orang-Utan","Schimpanse","Bonobo"],                               c:2, f:"Der Niokolo-Koba beherbergt eine der letzten Schimpansen-Populationen Westafrikas – leider stark bedroht!"},
+  {cat:"Wirtschaft",        q:"Was ist das wichtigste traditionelle Exportprodukt des Senegals?",                               a:["Kakao","Erdnüsse","Kaffee","Baumwolle"],                                    c:1, f:"Senegal nennt man manchmal 'das Land der Erdnüsse' – Erdnussöl und -mehl waren jahrzehntelang die wichtigsten Exportgüter."},
+  {cat:"Wirtschaft",        q:"Was ist die Währung des Senegals?",                                                              a:["Senegalesischer Franc","Euro","CFA-Franc (Westafrika)","Westafrik. Dollar"], c:2, f:"Der westafrikanische CFA-Franc wird von 8 Ländern geteilt und ist fest an den Euro gebunden."},
+  {cat:"Wirtschaft",        q:"Welcher Rohstoff wurde kürzlich vor der senegalesischen Küste entdeckt?",                        a:["Gold und Diamanten","Erdöl und Erdgas","Seltene Erden","Uran"],             c:1, f:"Senegals Erdöl- und Gasvorkommen könnten das Land reich machen. Die Förderung begann 2024!"},
+  {cat:"Wirtschaft",        q:"Was bauen die Arbeiter täglich im Lac Rose (Rosa See) ab?",                                      a:["Gold","Phosphate","Salz","Diamanten"],                                      c:2, f:"Die Arbeiter waten stundenlang im Salzwasser – ihr Körper wird mit Shea-Butter geschützt. Dann tragen sie das Salz ans Ufer."},
+  {cat:"Wirtschaft",        q:"Was ist ein wichtiger Wirtschaftszweig an der senegalesischen Atlantikküste?",                   a:["Skiindustrie","Fischerei","Kohlebergbau","Uhrenindustrie"],                 c:1, f:"Senegals Gewässer gehören zu den fischreichsten der Welt. Fisch ist auch das wichtigste Protein der Bevölkerung."},
+  {cat:"Wirtschaft",        q:"Welcher wichtige Rohstoff wird bei Thiès abgebaut und für Düngemittel gebraucht?",               a:["Diamanten","Phosphat","Bauxit","Kohle"],                                    c:1, f:"Senegal hat riesige Phosphat-Vorkommen – ein weltweit begehrter Rohstoff für die Landwirtschaft."},
+];
+
+let questions = [], idx = 0, correct = 0;
+
+function shuffle(a) {
+    const b = [...a];
+    for (let i = b.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [b[i],b[j]] = [b[j],b[i]];
+    }
+    return b;
+}
+
+function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+    questions = shuffle(QS);
+    idx = 0; correct = 0;
+    show('quizScreen');
+    render();
+}
+
+function render() {
+    const q = questions[idx];
+    const total = questions.length;
+    const cat = CAT[q.cat];
+
+    document.getElementById('qCounter').textContent = `Frage ${idx+1} / ${total}`;
+    document.getElementById('cCounter').textContent  = `✅ ${correct} richtig`;
+    document.getElementById('progFill').style.width  = `${(idx/total)*100}%`;
+
+    const pill = document.getElementById('catPill');
+    pill.textContent = `${cat.emoji} ${q.cat}`;
+    pill.style.background = cat.bg;
+    pill.style.borderColor = cat.border;
+    pill.style.color = cat.color;
+
+    document.getElementById('qText').textContent = q.q;
+
+    const div = document.getElementById('answersDiv');
+    div.innerHTML = '';
+    q.a.forEach((ans, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.innerHTML = `<span class="ans-letter">${String.fromCharCode(65+i)}</span><span class="ans-text">${ans}</span><span class="ans-icon"></span>`;
+        btn.onclick = () => pick(i);
+        div.appendChild(btn);
+    });
+
+    document.getElementById('fbBox').className = 'feedback-box';
+    document.getElementById('nextBtn').className = 'btn-next';
+}
+
+function pick(sel) {
+    const q = questions[idx];
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(b => b.disabled = true);
+
+    const ok = sel === q.c;
+    if (ok) correct++;
+
+    btns.forEach((b, i) => {
+        if (i === q.c)              { b.classList.add('a-correct'); b.querySelector('.ans-icon').textContent = '✅'; }
+        else if (i === sel && !ok)  { b.classList.add('a-wrong');   b.querySelector('.ans-icon').textContent = '❌'; }
+        else                        { b.classList.add('a-dimmed'); }
+    });
+
+    document.getElementById('cCounter').textContent = `✅ ${correct} richtig`;
+
+    const fb = document.getElementById('fbBox');
+    const title = document.getElementById('fbTitle');
+    if (ok) {
+        fb.className = 'feedback-box show fb-correct';
+        title.innerHTML = '✅ Richtig!';
+        title.style.color = '#15803d';
+    } else {
+        fb.className = 'feedback-box show fb-wrong';
+        title.innerHTML = `❌ Falsch! Richtig: <strong>${q.a[q.c]}</strong>`;
+        title.style.color = '#b91c1c';
+    }
+    document.getElementById('fbFact').textContent = q.f;
+
+    const nb = document.getElementById('nextBtn');
+    nb.className = 'btn-next show';
+    document.getElementById('nextTxt').textContent = (idx+1 >= questions.length) ? '🏆 Ergebnis sehen!' : 'Weiter ➜';
+}
+
+function nextQ() {
+    idx++;
+    if (idx >= questions.length) {
+        const total = questions.length;
+        const pct = Math.round((correct/total)*100);
+        let icon,title,msg;
+        if (pct>=90){icon='🏆';title='Senegal-Experte!';msg='Unglaublich! Du weißt fast alles über Senegal!';}
+        else if(pct>=70){icon='⭐';title='Sehr gut!';msg='Beeindruckend! Du kennst dich wirklich gut aus!';}
+        else if(pct>=50){icon='👍';title='Gut gemacht!';msg='Du weißt schon eine Menge über Senegal!';}
+        else if(pct>=30){icon='📚';title='Weitermachen!';msg='Nicht schlecht – aber da ist noch Luft nach oben!';}
+        else{icon='💪';title='Bleib dran!';msg='Senegal hat so viel Spannendes – lerne weiter!';}
+        document.getElementById('rIcon').textContent  = icon;
+        document.getElementById('rTitle').textContent = title;
+        document.getElementById('rMsg').textContent   = msg;
+        document.getElementById('rScore').textContent = `${correct}/${total}`;
+        document.getElementById('rPct').textContent   = `${pct}% richtig`;
+        show('resultsScreen');
+        setTimeout(() => { document.getElementById('rFill').style.width = `${pct}%`; }, 100);
+    } else {
+        render();
+    }
+}
+</script>
+</body>
+</html>
