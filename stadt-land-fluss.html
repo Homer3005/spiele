@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>🌍 EuroQuiz</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+    html { height: 100%; }
+    body {
+      height: 100%; height: 100dvh;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #0c0f2e;
+      color: #fff;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+    canvas#bg { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+    .screen {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: max(20px, env(safe-area-inset-top)) 18px max(20px, env(safe-area-inset-bottom));
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      z-index: 10;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .screen.hidden { opacity: 0; transform: translateY(18px); pointer-events: none; }
+
+    /* ── START ── */
+    #start { justify-content: center; }
+    .logo { text-align: center; margin-bottom: 30px; }
+    .logo-globe { font-size: 66px; display: block; animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0) rotate(-5deg);}50%{transform:translateY(-13px) rotate(5deg);} }
+    .logo-title { font-size: 42px; font-weight: 900; letter-spacing: -1.5px; line-height: 1; margin-top: 10px; background: linear-gradient(135deg,#8b5cf6,#ec4899,#f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .logo-sub { font-size: 13px; color: rgba(255,255,255,.4); margin-top: 5px; }
+    .mode-label { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,.3); margin-bottom: 14px; }
+    .mode-list { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 10px; }
+    .mode-btn { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border-radius: 18px; border: 1.5px solid rgba(255,255,255,.08); background: rgba(255,255,255,.05); color: #fff; cursor: pointer; text-align: left; transition: transform .15s, background .2s, border-color .2s; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+    .mode-btn:active { transform: scale(.96); }
+    .mode-btn[data-d="easy"]   { border-color: rgba(34,197,94,.35); }
+    .mode-btn[data-d="easy"]:hover   { background: rgba(34,197,94,.1);  border-color: rgba(34,197,94,.7); }
+    .mode-btn[data-d="medium"] { border-color: rgba(234,179,8,.35); }
+    .mode-btn[data-d="medium"]:hover { background: rgba(234,179,8,.1); border-color: rgba(234,179,8,.7); }
+    .mode-btn[data-d="hard"]   { border-color: rgba(239,68,68,.35); }
+    .mode-btn[data-d="hard"]:hover   { background: rgba(239,68,68,.1);  border-color: rgba(239,68,68,.7); }
+    .m-icon { font-size: 28px; flex-shrink: 0; }
+    .m-info { flex: 1; }
+    .m-name { font-size: 16px; font-weight: 700; }
+    .m-desc { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 2px; }
+    .m-arr { font-size: 18px; color: rgba(255,255,255,.3); }
+    .hs-row { margin-top: 22px; font-size: 13px; color: rgba(255,255,255,.35); text-align: center; }
+    .hs-row .hs-n { color: #fbbf24; font-weight: 700; font-size: 14px; }
+
+    /* ── GAME ── */
+    #game { justify-content: flex-start; padding-top: max(14px, env(safe-area-inset-top)); }
+    .g-hdr { width: 100%; max-width: 480px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .g-lives { display: flex; gap: 3px; font-size: 22px; }
+    .li { transition: all .3s ease; display: inline-block; }
+    .li.gone { filter: grayscale(1); opacity: .22; transform: scale(.72); }
+    .g-sb { text-align: center; }
+    .g-sl { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.3); }
+    .g-sv { font-size: 24px; font-weight: 900; color: #fbbf24; line-height: 1.1; }
+    .g-stb { text-align: right; }
+    .g-stl { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.3); }
+    .g-stv { font-size: 20px; font-weight: 800; line-height: 1.1; }
+    .g-prog { width: 100%; max-width: 480px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .g-pb { flex: 1; height: 5px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; }
+    .g-pf { height: 100%; background: linear-gradient(90deg,#8b5cf6,#ec4899); border-radius: 3px; transition: width .4s ease; }
+    .g-pt { font-size: 12px; color: rgba(255,255,255,.35); white-space: nowrap; }
+    .g-timer { width: 100%; max-width: 480px; margin-bottom: 13px; }
+    .g-tb { width: 100%; height: 7px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+    .g-tf { height: 100%; border-radius: 4px; background: #22c55e; transition: width .12s linear, background .3s ease; }
+    .q-card { width: 100%; max-width: 480px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.09); border-radius: 22px; padding: 20px 18px; margin-bottom: 13px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+    .q-badge { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,.3); margin-bottom: 8px; }
+    .q-text { font-size: 18px; font-weight: 700; line-height: 1.5; }
+    .q-hl  { color: #a78bfa; }
+    .q-hl2 { color: #34d399; }
+    .a-grid { width: 100%; max-width: 480px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 10px; }
+    .a-btn { padding: 13px 10px; min-height: 56px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,.1); background: rgba(255,255,255,.06); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; line-height: 1.3; text-align: center; transition: transform .12s, background .15s, border-color .15s, opacity .15s; display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(10px); }
+    .a-btn:active { transform: scale(.94) !important; }
+    .a-btn.correct { border-color: #22c55e !important; background: rgba(34,197,94,.18) !important; color: #86efac; }
+    .a-btn.wrong   { border-color: #ef4444 !important; background: rgba(239,68,68,.18) !important; color: #fca5a5; }
+    .a-btn.dis     { pointer-events: none; }
+    .fact-box { width: 100%; max-width: 480px; background: rgba(139,92,246,.1); border: 1px solid rgba(139,92,246,.2); border-radius: 14px; padding: 10px 14px; font-size: 12px; color: rgba(255,255,255,.6); display: none; }
+    .fact-box.on { display: block; }
+    .fact-box strong { color: #a78bfa; }
+
+    /* ── RESULT ── */
+    #result { justify-content: center; }
+    .r-wrap { width: 100%; max-width: 340px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+    .r-em  { font-size: 78px; animation: float 2.5s ease-in-out infinite; }
+    .r-ttl { font-size: 26px; font-weight: 800; margin-top: 12px; }
+    .r-sub { font-size: 14px; color: rgba(255,255,255,.4); margin-top: 5px; margin-bottom: 14px; }
+    .r-sc  { font-size: 60px; font-weight: 900; color: #fbbf24; text-shadow: 0 0 30px rgba(251,191,36,.35); line-height: 1; }
+    .r-scl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,.3); margin-top: 4px; margin-bottom: 16px; }
+    .r-rec { display: none; background: linear-gradient(135deg,#fbbf24,#f97316); color: #000; font-size: 13px; font-weight: 800; padding: 6px 18px; border-radius: 20px; margin-bottom: 14px; }
+    .r-rec.on { display: inline-block; animation: pop 1s ease infinite; }
+    @keyframes pop { 0%,100%{transform:scale(1);}50%{transform:scale(1.05);} }
+    .r-stats { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+    .r-st { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 12px 6px; }
+    .r-sv { font-size: 22px; font-weight: 800; color: #a78bfa; }
+    .r-sl { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.35); margin-top: 4px; }
+    .btn-rep { width: 100%; padding: 17px; border-radius: 18px; border: none; background: linear-gradient(135deg,#8b5cf6,#ec4899); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; margin-bottom: 10px; box-shadow: 0 6px 20px rgba(139,92,246,.3); transition: transform .15s, opacity .15s; }
+    .btn-rep:active { transform: scale(.97); opacity: .9; }
+    .btn-men { width: 100%; padding: 13px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,.12); background: transparent; color: rgba(255,255,255,.55); font-size: 14px; font-weight: 600; cursor: pointer; transition: transform .15s; }
+    .btn-men:active { transform: scale(.97); }
+
+    /* ── FLOATERS ── */
+    #feedback { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); font-size:84px; pointer-events:none; z-index:200; transition:transform .22s cubic-bezier(.34,1.56,.64,1), opacity .18s; opacity:0; }
+    #feedback.on { transform:translate(-50%,-50%) scale(1); opacity:1; }
+    #sk-pop { position:fixed; top:22%; left:50%; transform:translateX(-50%) translateY(-12px) scale(.85); background:linear-gradient(135deg,#f97316,#ec4899); padding:9px 22px; border-radius:22px; font-size:15px; font-weight:800; opacity:0; z-index:200; pointer-events:none; box-shadow:0 6px 20px rgba(249,115,22,.4); transition:all .28s cubic-bezier(.34,1.56,.64,1); white-space:nowrap; }
+    #sk-pop.on { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+    #pts-pop { position:fixed; top:40%; left:50%; transform:translateX(-50%) translateY(0); font-size:23px; font-weight:900; color:#fbbf24; opacity:0; z-index:200; pointer-events:none; text-shadow:0 2px 8px rgba(0,0,0,.5); transition:opacity .25s ease, transform .6s ease; }
+    #pts-pop.on { opacity:1; transform:translateX(-50%) translateY(-32px); }
+    #tu-flash { position:fixed; inset:0; background:rgba(239,68,68,.15); pointer-events:none; z-index:150; opacity:0; transition:opacity .15s; }
+    #tu-flash.on { opacity:1; }
+    @keyframes shake { 0%,100%{transform:translateX(0);}18%{transform:translateX(-11px);}36%{transform:translateX(11px);}54%{transform:translateX(-7px);}72%{transform:translateX(7px);}90%{transform:translateX(-3px);} }
+    .shake { animation:shake .45s ease; }
+    @keyframes scoreUp { 0%,100%{transform:scale(1);}50%{transform:scale(1.35);} }
+    .scoreUp { animation:scoreUp .35s ease; }
+    .confetti { position:fixed; pointer-events:none; z-index:300; animation:fall var(--t) ease forwards; border-radius:var(--r,2px); }
+    @keyframes fall { 0%{opacity:1;transform:translateY(-20px) rotate(0deg);}100%{opacity:0;transform:translateY(100vh) rotate(var(--rot));} }
+  </style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<div id="tu-flash"></div>
+<div id="feedback">✅</div>
+<div id="sk-pop">🔥 3er Streak!</div>
+<div id="pts-pop">+150</div>
+
+<!-- START -->
+<div id="start" class="screen">
+  <div class="logo">
+    <span class="logo-globe">🌍</span>
+    <div class="logo-title">EuroQuiz</div>
+    <div class="logo-sub">Hauptstädte &amp; Gewässer Europas</div>
+  </div>
+  <div class="mode-label">Wähle dein Level</div>
+  <div class="mode-list">
+    <button class="mode-btn" data-d="easy"   onclick="startGame('easy')">
+      <span class="m-icon">🌱</span>
+      <div class="m-info"><div class="m-name">Anfänger</div><div class="m-desc">Hauptstädte &amp; Länder · 20 Sek · 3 Leben</div></div>
+      <span class="m-arr">›</span>
+    </button>
+    <button class="mode-btn" data-d="medium" onclick="startGame('medium')">
+      <span class="m-icon">🗺️</span>
+      <div class="m-info"><div class="m-name">Fortgeschritten</div><div class="m-desc">+ Flüsse &amp; Gewässer · 15 Sek</div></div>
+      <span class="m-arr">›</span>
+    </button>
+    <button class="mode-btn" data-d="hard"   onclick="startGame('hard')">
+      <span class="m-icon">🔥</span>
+      <div class="m-info"><div class="m-name">Profi</div><div class="m-desc">Alle Fragetypen · nur 10 Sek!</div></div>
+      <span class="m-arr">›</span>
+    </button>
+  </div>
+  <div class="hs-row">🏆 Highscore: <span class="hs-n" id="hs-val">0</span> Punkte</div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen hidden">
+  <div class="g-hdr">
+    <div class="g-lives">
+      <span class="li" id="li-1">❤️</span>
+      <span class="li" id="li-2">❤️</span>
+      <span class="li" id="li-3">❤️</span>
+    </div>
+    <div class="g-sb"><div class="g-sl">Punkte</div><div class="g-sv" id="g-score">0</div></div>
+    <div class="g-stb"><div class="g-stl">Streak</div><div class="g-stv" id="g-streak">–</div></div>
+  </div>
+  <div class="g-prog">
+    <div class="g-pb"><div class="g-pf" id="g-pf" style="width:0%"></div></div>
+    <div class="g-pt" id="g-pt">1/15</div>
+  </div>
+  <div class="g-timer"><div class="g-tb"><div class="g-tf" id="g-tf" style="width:100%"></div></div></div>
+  <div class="q-card" id="q-card">
+    <div class="q-badge" id="q-badge">🌍 Frage</div>
+    <div class="q-text"  id="q-text">...</div>
+  </div>
+  <div class="a-grid" id="a-grid"></div>
+  <div class="fact-box" id="fact-box"></div>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="screen hidden">
+  <div class="r-wrap">
+    <div class="r-em"  id="r-em">🏆</div>
+    <div class="r-ttl" id="r-ttl">Super!</div>
+    <div class="r-sub" id="r-sub">Gut gemacht!</div>
+    <div class="r-sc"  id="r-sc">0</div>
+    <div class="r-scl">Punkte</div>
+    <div class="r-rec" id="r-rec">🥇 Neuer Rekord!</div>
+    <div class="r-stats">
+      <div class="r-st"><div class="r-sv" id="rs-c">0</div><div class="r-sl">Richtig</div></div>
+      <div class="r-st"><div class="r-sv" id="rs-s">0</div><div class="r-sl">Beststreak</div></div>
+      <div class="r-st"><div class="r-sv" id="rs-a">0%</div><div class="r-sl">Genauigkeit</div></div>
+    </div>
+    <button class="btn-rep" onclick="startGame(curDiff)">🔄 Nochmal spielen</button>
+    <button class="btn-men" onclick="goHome()">🏠 Startmenü</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────
+// DATENSATZ
+// ─────────────────────────────────────────
+const CITIES = [
+  {country:'Frankreich',      capital:'Paris',      water:'Seine'},
+  {country:'Deutschland',     capital:'Berlin',     water:'Spree'},
+  {country:'Österreich',      capital:'Wien',       water:'Donau'},
+  {country:'Ungarn',          capital:'Budapest',   water:'Donau'},
+  {country:'Tschechien',      capital:'Prag',       water:'Moldau'},
+  {country:'Polen',           capital:'Warschau',   water:'Weichsel'},
+  {country:'Niederlande',     capital:'Amsterdam',  water:'Amstel'},
+  {country:'Belgien',         capital:'Brüssel',    water:'Senne'},
+  {country:'Spanien',         capital:'Madrid',     water:'Manzanares'},
+  {country:'Portugal',        capital:'Lissabon',   water:'Tejo'},
+  {country:'Italien',         capital:'Rom',        water:'Tiber'},
+  {country:'Großbritannien',  capital:'London',     water:'Themse'},
+  {country:'Irland',          capital:'Dublin',     water:'Liffey'},
+  {country:'Ukraine',         capital:'Kiew',       water:'Dnjepr'},
+  {country:'Schweiz',         capital:'Bern',       water:'Aare'},
+  {country:'Luxemburg',       capital:'Luxemburg',  water:'Alzette'},
+  {country:'Serbien',         capital:'Belgrad',    water:'Donau'},
+  {country:'Rumänien',        capital:'Bukarest',   water:'Dâmbovița'},
+  {country:'Kroatien',        capital:'Zagreb',     water:'Save'},
+  {country:'Slowakei',        capital:'Bratislava', water:'Donau'},
+  {country:'Litauen',         capital:'Vilnius',    water:'Neris'},
+  {country:'Lettland',        capital:'Riga',       water:'Düna'},
+  {country:'Bosnien-Herzeg.', capital:'Sarajevo',   water:'Miljacka'},
+  {country:'Nordmazedonien',  capital:'Skopje',     water:'Vardar'},
+  {country:'Albanien',        capital:'Tirana',     water:'Lana'},
+  {country:'Griechenland',    capital:'Athen',      water:'Kifisos'},
+  {country:'Norwegen',        capital:'Oslo',       water:'Akerselva'},
+  {country:'Schweden',        capital:'Stockholm',  water:'Mälarsee'},
+  {country:'Dänemark',        capital:'Kopenhagen', water:'Øresund'},
+  {country:'Finnland',        capital:'Helsinki',   water:'Vantaa'},
+];
+
+const wFreq = {};
+CITIES.forEach(c => wFreq[c.water] = (wFreq[c.water]||0)+1);
+
+// ─────────────────────────────────────────
+// KONFIGURATION
+// ─────────────────────────────────────────
+const CFG = {
+  easy:   {label:'Anfänger',        time:20, types:[1,2],       totalQ:15},
+  medium: {label:'Fortgeschritten', time:15, types:[1,2,3],     totalQ:15},
+  hard:   {label:'Profi',           time:10, types:[1,2,3,4,5], totalQ:15},
+};
+
+// ─────────────────────────────────────────
+// ZUSTAND
+// ─────────────────────────────────────────
+let curDiff='medium', score=0, lives=3, streak=0, maxStreak=0;
+let correct=0, answered=0, qIndex=0, questions=[];
+let timeLeft=15, maxTime=15, timerID=null;
+let canAns=true, gameOver=false, advTimer=null;
+let highScore=0;
+
+// ─────────────────────────────────────────
+// AUDIO
+// ─────────────────────────────────────────
+let _ac=null;
+function ac(){if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;}
+function tone(freqs,type,vol,step,dur){
+  try{
+    const ctx=ac(),t=ctx.currentTime;
+    freqs.forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.type=type; o.frequency.value=f;
+      const s=t+i*step;
+      g.gain.setValueAtTime(0,s);
+      g.gain.linearRampToValueAtTime(vol,s+.02);
+      g.gain.exponentialRampToValueAtTime(.001,s+dur);
+      o.start(s);o.stop(s+dur+.05);
+    });
+  }catch(e){}
+}
+function snd(type){
+  if(type==='ok')      tone([523,659,784],'sine',.16,.1,.22);
+  else if(type==='no') tone([280,190],'sawtooth',.12,.12,.3);
+  else if(type==='streak') tone([659,784,1047,1319],'sine',.2,.08,.2);
+  else if(type==='tick')   tone([900],'sine',.04,0,.05);
+  else if(type==='time')   tone([200,150],'square',.1,.1,.3);
+  else if(type==='win')    tone([523,659,784,1047,1319],'sine',.18,.12,.4);
+  else if(type==='lose')   tone([380,300,230,180],'sine',.14,.14,.28);
+}
+
+// ─────────────────────────────────────────
+// HINTERGRUND-ANIMATION
+// ─────────────────────────────────────────
+(function(){
+  const cv=document.getElementById('bg');
+  const cx=cv.getContext('2d');
+  let stars=[];
+  function resize(){
+    cv.width=window.innerWidth; cv.height=window.innerHeight; stars=[];
+    for(let i=0;i<75;i++) stars.push({
+      x:Math.random()*cv.width, y:Math.random()*cv.height,
+      r:Math.random()*1.4+.3, a:Math.random(),
+      da:(Math.random()-.5)*.007, spd:Math.random()*.12+.02
+    });
+  }
+  function draw(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    const g=cx.createRadialGradient(cv.width/2,0,0,cv.width/2,cv.height,cv.height);
+    g.addColorStop(0,'#161936'); g.addColorStop(1,'#0c0f2e');
+    cx.fillStyle=g; cx.fillRect(0,0,cv.width,cv.height);
+    stars.forEach(s=>{
+      s.a+=s.da; if(s.a>1||s.a<.1)s.da*=-1;
+      s.y-=s.spd; if(s.y<0)s.y=cv.height;
+      cx.beginPath(); cx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(255,255,255,${s.a.toFixed(2)})`; cx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  resize(); window.addEventListener('resize',resize); draw();
+})();
+
+// ─────────────────────────────────────────
+// KONFETTI
+// ─────────────────────────────────────────
+function confetti(n){
+  const col=['#8b5cf6','#ec4899','#f97316','#fbbf24','#22c55e','#06b6d4','#ef4444'];
+  for(let i=0;i<n;i++){
+    const el=document.createElement('div');
+    el.className='confetti';
+    const t=(Math.random()*1.5+.6).toFixed(2);
+    el.style.cssText=`--t:${t}s;--rot:${Math.round(Math.random()*720-360)}deg;--r:${Math.random()>.5?'50%':'2px'};left:${(Math.random()*100).toFixed(1)}%;top:-20px;width:${(Math.random()*9+5).toFixed(0)}px;height:${(Math.random()*9+5).toFixed(0)}px;background:${col[Math.floor(Math.random()*col.length)]};animation-delay:${(Math.random()*.6).toFixed(2)}s`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),parseFloat(t)*1000+700);
+  }
+}
+function miniParts(){
+  const col=['#22c55e','#86efac','#fbbf24','#34d399'];
+  for(let i=0;i<10;i++){
+    const el=document.createElement('div');
+    el.className='confetti';
+    el.style.cssText=`--t:.7s;--rot:${Math.round(Math.random()*360)}deg;--r:50%;left:${(30+Math.random()*40).toFixed(1)}%;top:52%;width:7px;height:7px;background:${col[Math.floor(Math.random()*col.length)]}`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),850);
+  }
+}
+
+// ─────────────────────────────────────────
+// SCREENS
+// ─────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('hidden',s.id!==id));
+  if(id==='start') document.getElementById('hs-val').textContent=highScore;
+}
+function goHome(){ stopTimer(); if(advTimer)clearTimeout(advTimer); showScreen('start'); }
+
+// ─────────────────────────────────────────
+// HELFER
+// ─────────────────────────────────────────
+function shuffle(a){const r=[...a];for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
+function uniq(a){return[...new Set(a)];}
+function pickN(pool,exclude,n){return shuffle(uniq(pool).filter(x=>x!==exclude)).slice(0,n);}
+
+// ─────────────────────────────────────────
+// FRAGEN GENERIEREN – immer mit "Hauptstadt"
+// ─────────────────────────────────────────
+function makeQ(city, type){
+  const caps   = CITIES.map(c=>c.capital);
+  const ctrs   = CITIES.map(c=>c.country);
+  const waters = CITIES.map(c=>c.water);
+
+  // Typ 1 – Wie heißt die Hauptstadt von [Land]?
+  if(type===1){
+    const opts=shuffle([city.capital,...pickN(caps,city.capital,3)]);
+    return{
+      badge:'🏙️ Hauptstadt gesucht',
+      html:`Wie heißt die Hauptstadt von <span class="q-hl">${city.country}</span>?`,
+      correct:city.capital, opts, city
+    };
+  }
+
+  // Typ 2 – Von welchem Land ist [Hauptstadt] die Hauptstadt?
+  if(type===2){
+    const opts=shuffle([city.country,...pickN(ctrs,city.country,3)]);
+    return{
+      badge:'🗺️ Land gesucht',
+      html:`Von welchem Land ist <span class="q-hl">${city.capital}</span> die Hauptstadt?`,
+      correct:city.country, opts, city
+    };
+  }
+
+  // Typ 3 – Welches Gewässer fließt durch [Hauptstadt], die Hauptstadt von [Land]?
+  if(type===3){
+    const opts=shuffle([city.water,...pickN(waters,city.water,3)]);
+    return{
+      badge:'🌊 Gewässer gesucht',
+      html:`Welches Gewässer fließt durch <span class="q-hl">${city.capital}</span>, die Hauptstadt von <span class="q-hl2">${city.country}</span>?`,
+      correct:city.water, opts, city
+    };
+  }
+
+  // Typ 4 – Durch welche Hauptstadt fließt [Gewässer]?
+  if(type===4){
+    const opts=shuffle([city.capital,...pickN(caps,city.capital,3)]);
+    return{
+      badge:'💧 Hauptstadt gesucht',
+      html:`Durch welche europäische Hauptstadt fließt die <span class="q-hl">${city.water}</span>?`,
+      correct:city.capital, opts, city
+    };
+  }
+
+  // Typ 5 – Welche Hauptstadt mit Gewässer gehört zu [Land]?
+  if(type===5){
+    const corr=`${city.capital}  ·  ${city.water}`;
+    const wrongs=[];
+    for(const c of shuffle(CITIES.filter(x=>x!==city))){
+      if(wrongs.length>=3) break;
+      wrongs.push(`${c.capital}  ·  ${c.water}`);
+    }
+    const opts=shuffle([corr,...wrongs.slice(0,3)]);
+    return{
+      badge:'🔗 Hauptstadt + Gewässer',
+      html:`Welche Hauptstadt mit ihrem Gewässer gehört zu <span class="q-hl">${city.country}</span>?`,
+      correct:corr, opts, city
+    };
+  }
+}
+
+function buildQs(diff){
+  const cfg=CFG[diff];
+  const sel=shuffle([...CITIES]).slice(0,cfg.totalQ);
+  const types=cfg.types;
+  return shuffle(sel.map((city,i)=>{
+    let t=types[i%types.length];
+    if(t===4&&wFreq[city.water]>1) t=3;
+    return makeQ(city,t);
+  }));
+}
+
+// ─────────────────────────────────────────
+// TIMER
+// ─────────────────────────────────────────
+function stopTimer(){if(timerID){clearInterval(timerID);timerID=null;}}
+
+function startTimer(){
+  stopTimer();
+  timeLeft=maxTime;
+  setTimerUI(1);
+  timerID=setInterval(()=>{
+    timeLeft=Math.max(0,timeLeft-.1);
+    setTimerUI(timeLeft/maxTime);
+    if(timeLeft<=3&&Math.abs(timeLeft%1)<.12) snd('tick');
+    if(timeLeft<=0){stopTimer();onTimeout();}
+  },100);
+}
+
+function setTimerUI(p){
+  const f=document.getElementById('g-tf');
+  f.style.width=(p*100)+'%';
+  f.style.background=p>.5?'#22c55e':p>.25?'#f97316':'#ef4444';
+}
+
+function onTimeout(){
+  if(!canAns||gameOver)return;
+  canAns=false;
+  document.getElementById('tu-flash').classList.add('on');
+  setTimeout(()=>document.getElementById('tu-flash').classList.remove('on'),500);
+  snd('time'); streak=0; updStreak(); loseLife();
+  const q=questions[qIndex];
+  if(!q)return;
+  document.querySelectorAll('.a-btn').forEach(b=>{
+    b.classList.add('dis');
+    if(b.dataset.ans===q.correct) b.classList.add('correct');
+  });
+  showFact(q.city);
+  advTimer=setTimeout(advance,1900);
+}
+
+// ─────────────────────────────────────────
+// SPIELFLUSS
+// ─────────────────────────────────────────
+function startGame(diff){
+  if(advTimer)clearTimeout(advTimer);
+  curDiff=diff; gameOver=false;
+  score=0; lives=3; streak=0; maxStreak=0; correct=0; answered=0; qIndex=0;
+  maxTime=CFG[diff].time; canAns=true;
+  questions=buildQs(diff);
+  updScore(); updLives(); updStreak();
+  document.getElementById('fact-box').className='fact-box';
+  showScreen('game');
+  setTimeout(showQ,350);
+}
+
+function showQ(){
+  if(gameOver)return;
+  if(qIndex>=questions.length||lives<=0){endGame();return;}
+  const q=questions[qIndex];
+  canAns=true;
+  const tot=questions.length;
+  document.getElementById('g-pf').style.width=(qIndex/tot*100)+'%';
+  document.getElementById('g-pt').textContent=`${qIndex+1}/${tot}`;
+  document.getElementById('q-badge').textContent=q.badge;
+  document.getElementById('q-text').innerHTML=q.html;
+  document.getElementById('fact-box').className='fact-box';
+
+  const card=document.getElementById('q-card');
+  card.style.transition='none'; card.style.opacity='0'; card.style.transform='translateY(12px)';
+  void card.offsetWidth;
+  card.style.transition='opacity .3s ease, transform .3s ease';
+  card.style.opacity='1'; card.style.transform='translateY(0)';
+
+  const grid=document.getElementById('a-grid');
+  grid.innerHTML='';
+  q.opts.forEach((opt,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='a-btn'; btn.textContent=opt; btn.dataset.ans=opt;
+    btn.addEventListener('click',()=>onAnswer(btn,opt,q));
+    grid.appendChild(btn);
+    setTimeout(()=>{
+      btn.style.transition='opacity .25s ease, transform .25s ease';
+      btn.style.opacity='1'; btn.style.transform='translateY(0)';
+    },idx*55+80);
+  });
+  startTimer();
+}
+
+function onAnswer(btn,selected,q){
+  if(!canAns||gameOver)return;
+  canAns=false; stopTimer(); answered++;
+  document.querySelectorAll('.a-btn').forEach(b=>b.classList.add('dis'));
+
+  if(selected===q.correct){
+    btn.classList.add('correct');
+    correct++; streak++; if(streak>maxStreak)maxStreak=streak;
+    const tB=Math.round(timeLeft/maxTime*50);
+    const sB=streak>=3?(streak-2)*20:0;
+    const pts=100+tB+sB;
+    score+=pts;
+    showFback('✅'); miniParts(); snd(streak>=3?'streak':'ok');
+    if(streak>=3) showSkPop(`🔥 ${streak}er Streak!  +${sB} Bonus`);
+    showPts(`+${pts}`);
+    updScore(true); updStreak();
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.a-btn').forEach(b=>{if(b.dataset.ans===q.correct)b.classList.add('correct');});
+    streak=0; updStreak(); loseLife(); snd('no'); showFback('❌');
+    const card=document.getElementById('q-card');
+    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    setTimeout(()=>card.classList.remove('shake'),500);
+  }
+  showFact(q.city);
+  advTimer=setTimeout(advance,2100);
+}
+
+function advance(){
+  if(gameOver)return;
+  qIndex++;
+  if(lives<=0||qIndex>=questions.length) endGame();
+  else showQ();
+}
+
+function loseLife(){lives=Math.max(0,lives-1);updLives();}
+
+function endGame(){
+  if(gameOver)return;
+  gameOver=true; stopTimer();
+  const acc=answered>0?Math.round(correct/answered*100):0;
+  const isRec=score>highScore&&score>0;
+  if(isRec)highScore=score;
+  let em,ttl,sub;
+  if(lives===0&&correct<6){em='😰';ttl='Keine Leben mehr!';sub='Üb weiter – du schaffst das! 💪';snd('lose');}
+  else if(acc>=87){em='🏆';ttl='Absolut fantastisch!';sub='Du bist ein echter Europa-Profi! 🌍🌟';snd('win');setTimeout(()=>confetti(65),200);}
+  else if(acc>=70){em='🌟';ttl='Super gemacht!';sub='Tolle Leistung! Du kennst Europa gut! 👏';snd('win');setTimeout(()=>confetti(30),200);}
+  else if(acc>=50){em='😊';ttl='Gut gemacht!';sub='Mit mehr Übung wird\'s noch besser! 💪';snd('ok');}
+  else{em='📚';ttl='Weiter üben!';sub='Jede Runde macht dich schlauer! 🔁';}
+  document.getElementById('r-em').textContent=em;
+  document.getElementById('r-ttl').textContent=ttl;
+  document.getElementById('r-sub').textContent=sub;
+  document.getElementById('r-sc').textContent=score;
+  document.getElementById('rs-c').textContent=`${correct}/${answered}`;
+  document.getElementById('rs-s').textContent=maxStreak;
+  document.getElementById('rs-a').textContent=acc+'%';
+  document.getElementById('r-rec').classList.toggle('on',isRec);
+  showScreen('result');
+}
+
+// ─────────────────────────────────────────
+// UI-UPDATES
+// ─────────────────────────────────────────
+function updScore(anim){
+  const el=document.getElementById('g-score');
+  el.textContent=score;
+  if(anim){el.classList.remove('scoreUp');void el.offsetWidth;el.classList.add('scoreUp');setTimeout(()=>el.classList.remove('scoreUp'),400);}
+}
+function updLives(){for(let i=1;i<=3;i++)document.getElementById(`li-${i}`).classList.toggle('gone',i>lives);}
+function updStreak(){
+  const el=document.getElementById('g-streak');
+  if(streak===0){el.textContent='–';el.style.color='rgba(255,255,255,.3)';}
+  else{el.textContent=streak+'🔥';el.style.color=streak>=5?'#f97316':streak>=3?'#ef4444':'#fbbf24';}
+}
+function showFback(em){
+  const el=document.getElementById('feedback');
+  el.textContent=em; el.classList.remove('on'); void el.offsetWidth;
+  el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),550);
+}
+function showSkPop(txt){
+  const el=document.getElementById('sk-pop');
+  el.textContent=txt; el.classList.remove('on'); void el.offsetWidth;
+  el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),1600);
+}
+function showPts(txt){
+  const el=document.getElementById('pts-pop');
+  el.textContent=txt; el.classList.remove('on'); void el.offsetWidth;
+  el.classList.add('on'); setTimeout(()=>el.classList.remove('on'),750);
+}
+function showFact(city){
+  const el=document.getElementById('fact-box');
+  el.innerHTML=`💡 <strong>${city.capital}</strong> ist Hauptstadt von <strong>${city.country}</strong> · Gewässer: <strong>${city.water}</strong>`;
+  el.className='fact-box on';
+}
+
+document.getElementById('hs-val').textContent=highScore;
+</script>
+</body>
+</html>
