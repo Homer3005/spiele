@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>✝️ Konfi-Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #F5C842;
+  --gold-dark: #D4A017;
+  --blue: #2563EB;
+  --blue-light: #EFF6FF;
+  --green: #16A34A;
+  --green-light: #F0FDF4;
+  --red: #DC2626;
+  --red-light: #FEF2F2;
+  --purple: #7C3AED;
+  --purple-light: #F5F3FF;
+  --bg: #0F172A;
+  --card: #1E293B;
+  --card2: #273449;
+  --text: #F1F5F9;
+  --text-muted: #94A3B8;
+  --border: #334155;
+  --radius: 20px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+
+/* ─── SCREENS ─── */
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ─── HOME ─── */
+#homeScreen { background: linear-gradient(160deg, #0F172A 0%, #1a1035 100%); align-items: center; justify-content: flex-start; padding: 0; }
+.home-header { width: 100%; padding: 48px 24px 32px; text-align: center; position: relative; }
+.home-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(245,200,66,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.cross-icon { font-size: 56px; margin-bottom: 8px; display: block; filter: drop-shadow(0 0 20px rgba(245,200,66,0.5)); }
+.home-title { font-size: 36px; font-weight: 900; letter-spacing: -1px; color: var(--gold); line-height: 1; }
+.home-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 4px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+
+.streak-banner { 
+  margin: 0 16px 20px; background: linear-gradient(135deg, #92400e, #D97706);
+  border-radius: 16px; padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 4px 20px rgba(217,119,6,0.3);
+}
+.streak-fire { font-size: 32px; }
+.streak-text { flex: 1; }
+.streak-num { font-size: 22px; font-weight: 900; color: #FEF3C7; }
+.streak-label { font-size: 12px; color: #FDE68A; font-weight: 600; }
+
+.modules-list { padding: 0 16px 32px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.module-card {
+  background: var(--card); border-radius: var(--radius); padding: 16px 18px;
+  display: flex; align-items: center; gap: 14px; cursor: pointer;
+  border: 1.5px solid var(--border); position: relative; overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.module-card:active { transform: scale(0.98); }
+.module-card.locked { opacity: 0.5; cursor: not-allowed; }
+.module-card .m-icon { font-size: 30px; flex-shrink: 0; }
+.module-card .m-info { flex: 1; min-width: 0; }
+.module-card .m-name { font-size: 15px; font-weight: 800; color: var(--text); }
+.module-card .m-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-weight: 600; }
+.module-card .m-lock { font-size: 18px; }
+.progress-bar-wrap { margin-top: 8px; background: var(--bg); border-radius: 99px; height: 6px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+.m-progress-txt { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 700; }
+.module-glow { position: absolute; top: 0; right: 0; width: 80px; height: 100%; opacity: 0.08; pointer-events: none; }
+
+/* ─── MODULE SCREEN ─── */
+#moduleScreen { background: var(--bg); padding: 0; }
+.mod-header {
+  padding: 52px 20px 20px; display: flex; align-items: center; gap: 12px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+}
+.back-btn { background: var(--card2); border: none; color: var(--text); font-size: 20px; width: 40px; height: 40px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mod-title { font-size: 20px; font-weight: 900; }
+.mod-icon-big { font-size: 28px; }
+.mode-list { padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; }
+.mode-card {
+  background: var(--card); border-radius: var(--radius); padding: 20px;
+  cursor: pointer; border: 1.5px solid var(--border);
+  display: flex; align-items: center; gap: 16px;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.mode-card:active { transform: scale(0.98); }
+.mode-card .mode-icon { font-size: 36px; }
+.mode-card .mode-info { flex: 1; }
+.mode-card .mode-name { font-size: 16px; font-weight: 800; }
+.mode-card .mode-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
+.mode-card .mode-arrow { font-size: 20px; color: var(--text-muted); }
+.mode-card:hover { border-color: var(--gold); }
+
+/* ─── GAME SCREEN ─── */
+#gameScreen { background: var(--bg); }
+.game-header { padding: 52px 16px 16px; display: flex; align-items: center; gap: 10px; }
+.game-progress-bar { flex: 1; height: 8px; background: var(--card2); border-radius: 99px; overflow: hidden; }
+.game-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #F97316); border-radius: 99px; transition: width 0.4s ease; }
+.game-step { font-size: 13px; font-weight: 800; color: var(--text-muted); white-space: nowrap; }
+
+.game-content { flex: 1; padding: 0 16px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+.question-card { background: var(--card); border-radius: var(--radius); padding: 24px; border: 1.5px solid var(--border); }
+.question-type-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--card2); border-radius: 99px; padding: 4px 12px; font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 14px; letter-spacing: 0.5px; text-transform: uppercase; }
+.question-text { font-size: 18px; font-weight: 800; line-height: 1.45; color: var(--text); }
+.question-hint { font-size: 13px; color: var(--text-muted); margin-top: 8px; font-weight: 600; }
+
+/* Lückentext */
+.gap-fill-area { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; line-height: 2; font-size: 16px; font-weight: 700; }
+.gap-word { color: var(--text-muted); }
+.gap-blank { display: inline-block; min-width: 80px; border-bottom: 2px solid var(--gold); color: var(--gold); font-weight: 900; text-align: center; padding: 0 4px; }
+.gap-blank.filled { color: var(--green); border-color: var(--green); }
+.gap-blank.wrong { color: var(--red); border-color: var(--red); }
+
+.answer-options { display: flex; flex-direction: column; gap: 10px; }
+.answer-btn {
+  background: var(--card); border: 2px solid var(--border); border-radius: 14px;
+  padding: 16px 18px; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; text-align: left; font-family: 'Nunito', sans-serif;
+  font-size: 15px; font-weight: 700; color: var(--text);
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  width: 100%;
+}
+.answer-btn:active:not(:disabled) { transform: scale(0.98); }
+.answer-btn.correct { border-color: var(--green); background: var(--green-light); color: var(--green); }
+.answer-btn.wrong { border-color: var(--red); background: var(--red-light); color: var(--red); }
+.answer-btn:disabled { cursor: default; }
+.answer-letter { width: 28px; height: 28px; border-radius: 8px; background: var(--card2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; flex-shrink: 0; }
+
+/* Sortierung */
+.sort-list { display: flex; flex-direction: column; gap: 8px; }
+.sort-item {
+  background: var(--card2); border: 2px solid var(--border); border-radius: 14px;
+  padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  cursor: grab; font-size: 14px; font-weight: 700; color: var(--text);
+  user-select: none; transition: border-color 0.15s, opacity 0.15s;
+}
+.sort-item.dragging { opacity: 0.5; border-color: var(--gold); }
+.sort-item.correct-pos { border-color: var(--green); background: #14532d22; }
+.sort-item.wrong-pos { border-color: var(--red); background: #7f1d1d22; }
+.sort-handle { color: var(--text-muted); font-size: 18px; flex-shrink: 0; }
+.sort-num { width: 24px; height: 24px; border-radius: 8px; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 900; flex-shrink: 0; }
+.check-order-btn {
+  background: linear-gradient(135deg, var(--gold), #F97316); border: none; border-radius: 14px;
+  padding: 16px; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 900;
+  color: #1a1a1a; cursor: pointer; width: 100%; margin-top: 4px;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.check-order-btn:active { transform: scale(0.98); }
+
+/* Spracheingabe */
+.speech-area { text-align: center; padding: 16px; }
+.mic-btn {
+  width: 90px; height: 90px; border-radius: 50%; border: none;
+  background: linear-gradient(135deg, var(--blue), #7C3AED);
+  font-size: 38px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px; box-shadow: 0 0 0 0 rgba(37,99,235,0.4);
+  transition: transform 0.15s;
+}
+.mic-btn.listening { animation: pulse-mic 1.2s infinite; box-shadow: 0 0 0 12px rgba(37,99,235,0.2); }
+.mic-btn:active { transform: scale(0.95); }
+@keyframes pulse-mic { 0%,100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); } 50% { box-shadow: 0 0 0 20px rgba(37,99,235,0); } }
+.speech-status { font-size: 13px; font-weight: 700; color: var(--text-muted); min-height: 20px; }
+.speech-transcript { background: var(--card2); border-radius: 12px; padding: 12px 16px; margin-top: 12px; font-size: 14px; font-weight: 600; color: var(--text); min-height: 48px; text-align: left; border: 1px solid var(--border); display: none; }
+.speech-result { margin-top: 12px; font-size: 13px; font-weight: 800; display: none; }
+.speech-result.good { color: var(--green); }
+.speech-result.ok { color: var(--gold); }
+.speech-result.bad { color: var(--red); }
+.speech-next-btn { display: none; margin-top: 12px; background: var(--green); border: none; border-radius: 14px; padding: 14px 24px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; color: white; cursor: pointer; width: 100%; }
+
+/* Feedback overlay */
+.feedback-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; padding: 20px 20px 36px;
+  display: none; flex-direction: column; gap: 12px; z-index: 100;
+  border-radius: 24px 24px 0 0;
+}
+.feedback-bar.show { display: flex; }
+.feedback-bar.correct { background: var(--green-light); border-top: 3px solid var(--green); }
+.feedback-bar.wrong { background: var(--red-light); border-top: 3px solid var(--red); }
+.feedback-label { font-size: 18px; font-weight: 900; }
+.feedback-bar.correct .feedback-label { color: var(--green); }
+.feedback-bar.wrong .feedback-label { color: var(--red); }
+.feedback-text { font-size: 14px; font-weight: 600; color: #374151; }
+.feedback-next { background: var(--green); border: none; border-radius: 14px; padding: 16px; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 900; color: white; cursor: pointer; width: 100%; }
+.feedback-bar.wrong .feedback-next { background: var(--red); }
+
+/* ─── RESULT SCREEN ─── */
+#resultScreen { background: var(--bg); align-items: center; justify-content: center; padding: 24px; }
+.result-card { background: var(--card); border-radius: 28px; padding: 36px 28px; max-width: 400px; width: 100%; text-align: center; border: 1.5px solid var(--border); }
+.result-emoji { font-size: 72px; margin-bottom: 12px; display: block; }
+.result-title { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+.result-sub { font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 24px; }
+.result-score { font-size: 52px; font-weight: 900; color: var(--gold); line-height: 1; margin-bottom: 4px; }
+.result-score-label { font-size: 13px; color: var(--text-muted); font-weight: 700; margin-bottom: 28px; }
+.result-xp { background: var(--card2); border-radius: 14px; padding: 14px; margin-bottom: 20px; font-size: 16px; font-weight: 800; color: var(--gold); }
+.result-btns { display: flex; flex-direction: column; gap: 10px; }
+.result-btn-home { background: var(--card2); border: 2px solid var(--border); border-radius: 14px; padding: 14px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; color: var(--text); cursor: pointer; }
+.result-btn-again { background: linear-gradient(135deg, var(--gold), #F97316); border: none; border-radius: 14px; padding: 16px; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 900; color: #1a1a1a; cursor: pointer; }
+
+/* Toast */
+.toast { position: fixed; top: 60px; left: 50%; transform: translateX(-50%) translateY(-80px); background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 20px; font-size: 14px; font-weight: 800; color: var(--text); transition: transform 0.4s; z-index: 200; white-space: nowrap; box-shadow: var(--shadow); }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* Stars animation */
+@keyframes pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); } 100% { transform: scale(1); opacity: 1; } }
+.star-pop { display: inline-block; animation: pop 0.4s ease both; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ HOME ══════════ -->
+<div class="screen active" id="homeScreen">
+  <div class="home-header">
+    <span class="cross-icon">✝️</span>
+    <div class="home-title">Konfi-Quest</div>
+    <div class="home-subtitle">Konfirmationsunterricht 2026</div>
+  </div>
+
+  <div class="streak-banner" id="streakBanner">
+    <div class="streak-fire">🔥</div>
+    <div class="streak-text">
+      <div class="streak-num" id="streakNum">0 Tage</div>
+      <div class="streak-label">Lern-Streak – weiter so!</div>
+    </div>
+    <div style="font-size:13px;color:#FDE68A;font-weight:800;">+10 XP/Tag</div>
+  </div>
+
+  <div class="modules-list" id="modulesList"></div>
+</div>
+
+<!-- ══════════ MODULE ══════════ -->
+<div class="screen" id="moduleScreen">
+  <div class="mod-header">
+    <button class="back-btn" onclick="showHome()">‹</button>
+    <span class="mod-icon-big" id="modIconBig"></span>
+    <div class="mod-title" id="modTitleBig"></div>
+  </div>
+  <div class="mode-list" id="modeList"></div>
+</div>
+
+<!-- ══════════ GAME ══════════ -->
+<div class="screen" id="gameScreen">
+  <div class="game-header">
+    <button class="back-btn" onclick="showHome()">‹</button>
+    <div class="game-progress-bar"><div class="game-progress-fill" id="gameProg"></div></div>
+    <div class="game-step" id="gameStep">0/0</div>
+  </div>
+  <div class="game-content" id="gameContent"></div>
+  <div class="feedback-bar" id="feedbackBar">
+    <div class="feedback-label" id="feedbackLabel"></div>
+    <div class="feedback-text" id="feedbackText"></div>
+    <button class="feedback-next" id="feedbackNext" onclick="nextQuestion()">Weiter →</button>
+  </div>
+</div>
+
+<!-- ══════════ RESULT ══════════ -->
+<div class="screen" id="resultScreen">
+  <div class="result-card">
+    <span class="result-emoji" id="resultEmoji">⭐</span>
+    <div class="result-title" id="resultTitle">Super!</div>
+    <div class="result-sub" id="resultSub"></div>
+    <div class="result-score" id="resultScore">0/0</div>
+    <div class="result-score-label">Richtig</div>
+    <div class="result-xp" id="resultXP">+0 XP verdient 🌟</div>
+    <div class="result-btns">
+      <button class="result-btn-again" onclick="replayModule()">Nochmal spielen 🔄</button>
+      <button class="result-btn-home" onclick="showHome()">Zur Übersicht</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+const MODULES = [
+  {
+    id: 'vater_unser', icon: '🙏', name: 'Vater Unser', desc: 'Das wichtigste Gebet',
+    color: '#F5C842', unlockAt: 0,
+    text: 'Vater unser im Himmel, geheiligt werde dein Name. Dein Reich komme. Dein Wille geschehe, wie im Himmel so auf Erden. Unser tägliches Brot gib uns heute. Und vergib uns unsere Schuld, wie auch wir vergeben unsern Schuldigern. Und führe uns nicht in Versuchung, sondern erlöse uns von dem Bösen. Denn dein ist das Reich und die Kraft und die Herrlichkeit in Ewigkeit. Amen.',
+    lines: [
+      'Vater unser im Himmel,',
+      'geheiligt werde dein Name.',
+      'Dein Reich komme.',
+      'Dein Wille geschehe, wie im Himmel so auf Erden.',
+      'Unser tägliches Brot gib uns heute.',
+      'Und vergib uns unsere Schuld,',
+      'wie auch wir vergeben unsern Schuldigern.',
+      'Und führe uns nicht in Versuchung,',
+      'sondern erlöse uns von dem Bösen.',
+      'Denn dein ist das Reich und die Kraft und die Herrlichkeit in Ewigkeit.',
+      'Amen.'
+    ],
+    gaps: [
+      { before: 'Vater unser im', blank: 'Himmel', after: ', geheiligt werde dein Name.' },
+      { before: 'Dein', blank: 'Reich', after: 'komme.' },
+      { before: 'Dein Wille', blank: 'geschehe', after: ', wie im Himmel so auf Erden.' },
+      { before: 'Unser tägliches', blank: 'Brot', after: 'gib uns heute.' },
+      { before: 'Und vergib uns unsere', blank: 'Schuld', after: ',' },
+      { before: 'Und', blank: 'führe', after: 'uns nicht in Versuchung,' },
+      { before: 'sondern', blank: 'erlöse', after: 'uns von dem Bösen.' },
+    ]
+  },
+  {
+    id: 'glaubensbekenntnis', icon: '📜', name: 'Glaubensbekenntnis', desc: 'Der apostolische Glaube',
+    color: '#7C3AED', unlockAt: 1,
+    text: 'Ich glaube an Gott, den Vater, den Allmächtigen, den Schöpfer des Himmels und der Erde. Und an Jesus Christus, seinen eingeborenen Sohn, unsern Herrn. Empfangen durch den Heiligen Geist, geboren von der Jungfrau Maria. Ich glaube an den Heiligen Geist, die heilige christliche Kirche, Gemeinschaft der Heiligen, Vergebung der Sünden, Auferstehung der Toten und das ewige Leben. Amen.',
+    lines: [
+      'Ich glaube an Gott, den Vater, den Allmächtigen,',
+      'den Schöpfer des Himmels und der Erde.',
+      'Und an Jesus Christus, seinen eingeborenen Sohn, unsern Herrn.',
+      'Empfangen durch den Heiligen Geist,',
+      'geboren von der Jungfrau Maria.',
+      'Ich glaube an den Heiligen Geist,',
+      'die heilige christliche Kirche,',
+      'Gemeinschaft der Heiligen,',
+      'Vergebung der Sünden,',
+      'Auferstehung der Toten und das ewige Leben.',
+      'Amen.'
+    ],
+    gaps: [
+      { before: 'Ich glaube an', blank: 'Gott', after: ', den Vater, den Allmächtigen,' },
+      { before: 'den Schöpfer des', blank: 'Himmels', after: 'und der Erde.' },
+      { before: 'Und an Jesus Christus, seinen', blank: 'eingeborenen', after: 'Sohn, unsern Herrn.' },
+      { before: 'Empfangen durch den', blank: 'Heiligen', after: 'Geist,' },
+      { before: 'geboren von der', blank: 'Jungfrau', after: 'Maria.' },
+      { before: 'Auferstehung der', blank: 'Toten', after: 'und das ewige Leben.' },
+    ]
+  },
+  {
+    id: 'zehn_gebote', icon: '⚖️', name: '10 Gebote', desc: 'Die Gebote Gottes',
+    color: '#16A34A', unlockAt: 2,
+    lines: [
+      '1. Du sollst keine anderen Götter haben neben mir.',
+      '2. Du sollst den Namen des Herrn nicht missbrauchen.',
+      '3. Du sollst den Feiertag heiligen.',
+      '4. Du sollst Vater und Mutter ehren.',
+      '5. Du sollst nicht töten.',
+      '6. Du sollst nicht ehebrechen.',
+      '7. Du sollst nicht stehlen.',
+      '8. Du sollst kein falsches Zeugnis geben.',
+      '9. Du sollst nicht begehren deines Nächsten Haus.',
+      '10. Du sollst nicht begehren deines Nächsten Frau.'
+    ],
+    gaps: [
+      { before: 'Du sollst keine anderen', blank: 'Götter', after: 'haben neben mir.' },
+      { before: 'Du sollst den Namen des', blank: 'Herrn', after: 'nicht missbrauchen.' },
+      { before: 'Du sollst den', blank: 'Feiertag', after: 'heiligen.' },
+      { before: 'Du sollst Vater und', blank: 'Mutter', after: 'ehren.' },
+      { before: 'Du sollst nicht', blank: 'töten', after: '.' },
+      { before: 'Du sollst nicht', blank: 'stehlen', after: '.' },
+      { before: 'Du sollst kein falsches', blank: 'Zeugnis', after: 'geben.' },
+    ]
+  },
+  {
+    id: 'psalm23', icon: '🌿', name: 'Psalm 23', desc: 'Der Herr ist mein Hirte',
+    color: '#0891B2', unlockAt: 3,
+    text: 'Der Herr ist mein Hirte, mir wird nichts mangeln. Er weidet mich auf einer grünen Aue und führet mich zum frischen Wasser. Er erquicket meine Seele. Er führet mich auf rechter Straße um seines Namens willen. Und ob ich schon wanderte im finstern Tal, fürchte ich kein Unglück, denn du bist bei mir, dein Stecken und Stab trösten mich.',
+    lines: [
+      'Der Herr ist mein Hirte, mir wird nichts mangeln.',
+      'Er weidet mich auf einer grünen Aue',
+      'und führet mich zum frischen Wasser.',
+      'Er erquicket meine Seele.',
+      'Er führet mich auf rechter Straße um seines Namens willen.',
+      'Und ob ich schon wanderte im finstern Tal,',
+      'fürchte ich kein Unglück,',
+      'denn du bist bei mir,',
+      'dein Stecken und Stab trösten mich.'
+    ],
+    gaps: [
+      { before: 'Der Herr ist mein', blank: 'Hirte', after: ', mir wird nichts mangeln.' },
+      { before: 'Er weidet mich auf einer grünen', blank: 'Aue', after: '' },
+      { before: 'und führet mich zum frischen', blank: 'Wasser', after: '.' },
+      { before: 'Er', blank: 'erquicket', after: 'meine Seele.' },
+      { before: 'fürchte ich kein', blank: 'Unglück', after: ',' },
+      { before: 'dein Stecken und', blank: 'Stab', after: 'trösten mich.' },
+    ]
+  },
+  {
+    id: 'psalm121', icon: '⛰️', name: 'Psalm 121', desc: 'Ich hebe meine Augen auf',
+    color: '#EA580C', unlockAt: 4,
+    text: 'Ich hebe meine Augen auf zu den Bergen. Woher kommt mir Hilfe? Meine Hilfe kommt vom Herrn, der Himmel und Erde gemacht hat. Er wird deinen Fuß nicht gleiten lassen, und der dich behütet, schläft nicht.',
+    lines: [
+      'Ich hebe meine Augen auf zu den Bergen.',
+      'Woher kommt mir Hilfe?',
+      'Meine Hilfe kommt vom Herrn,',
+      'der Himmel und Erde gemacht hat.',
+      'Er wird deinen Fuß nicht gleiten lassen,',
+      'und der dich behütet, schläft nicht.'
+    ],
+    gaps: [
+      { before: 'Ich hebe meine', blank: 'Augen', after: 'auf zu den Bergen.' },
+      { before: 'Meine Hilfe kommt vom', blank: 'Herrn', after: ',' },
+      { before: 'der Himmel und', blank: 'Erde', after: 'gemacht hat.' },
+      { before: 'Er wird deinen Fuß nicht', blank: 'gleiten', after: 'lassen,' },
+      { before: 'und der dich', blank: 'behütet', after: ', schläft nicht.' },
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let state = {
+  xp: 0,
+  streak: 0,
+  lastPlayDate: null,
+  progress: {}, // moduleId -> 0-100
+  completedModules: 0
+};
+
+let currentModule = null;
+let currentMode = null;
+let questions = [];
+let qIndex = 0;
+let correct = 0;
+let dragSrcIdx = null;
+let sortOrder = [];
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('konfi_state');
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch(e) {}
+  updateStreak();
+}
+function saveState() {
+  try { localStorage.setItem('konfi_state', JSON.stringify(state)); } catch(e) {}
+}
+function updateStreak() {
+  const today = new Date().toDateString();
+  if (state.lastPlayDate === today) return;
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (state.lastPlayDate === yesterday) {
+    state.streak++;
+  } else if (state.lastPlayDate !== today) {
+    if (state.lastPlayDate) state.streak = 0;
+  }
+  state.lastPlayDate = today;
+  saveState();
+}
+function addXP(amount) {
+  state.xp += amount;
+  saveState();
+  showToast(`+${amount} XP 🌟`);
+}
+
+// ═══════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════
+function showHome() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('homeScreen').classList.add('active');
+  renderHome();
+}
+
+function renderHome() {
+  document.getElementById('streakNum').textContent = `${state.streak} ${state.streak === 1 ? 'Tag' : 'Tage'}`;
+  const list = document.getElementById('modulesList');
+  list.innerHTML = '';
+  MODULES.forEach((mod, i) => {
+    const prog = state.progress[mod.id] || 0;
+    const locked = state.completedModules < mod.unlockAt;
+    const card = document.createElement('div');
+    card.className = 'module-card' + (locked ? ' locked' : '');
+    card.innerHTML = `
+      <div class="m-icon">${mod.icon}</div>
+      <div class="m-info">
+        <div class="m-name">${mod.name}</div>
+        <div class="m-desc">${mod.desc}</div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width:${prog}%;background:${mod.color}"></div>
+        </div>
+        <div class="m-progress-txt">${prog}% gelernt · ${Math.round(prog/10)} XP</div>
+      </div>
+      ${locked ? '<div class="m-lock">🔒</div>' : '<div style="font-size:20px;color:var(--text-muted)">›</div>'}
+    `;
+    if (!locked) card.onclick = () => showModule(mod);
+    list.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════
+// MODULE
+// ═══════════════════════════════════════════
+function showModule(mod) {
+  currentModule = mod;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('moduleScreen').classList.add('active');
+  document.getElementById('modIconBig').textContent = mod.icon;
+  document.getElementById('modTitleBig').textContent = mod.name;
+
+  const modeList = document.getElementById('modeList');
+  modeList.innerHTML = '';
+
+  const modes = [
+    { id: 'gaps', icon: '✏️', name: 'Lückentext', desc: 'Fehlende Wörter ergänzen' },
+    { id: 'sort', icon: '🔀', name: 'Reihenfolge', desc: 'Sätze in die richtige Reihenfolge bringen' },
+    { id: 'speech', icon: '🎙️', name: 'Sprechen', desc: 'Laut sprechen und prüfen lassen' }
+  ];
+  modes.forEach(mode => {
+    const card = document.createElement('div');
+    card.className = 'mode-card';
+    card.innerHTML = `
+      <div class="mode-icon">${mode.icon}</div>
+      <div class="mode-info">
+        <div class="mode-name">${mode.name}</div>
+        <div class="mode-desc">${mode.desc}</div>
+      </div>
+      <div class="mode-arrow">›</div>
+    `;
+    card.onclick = () => startGame(mod, mode.id);
+    modeList.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════
+// GAME
+// ═══════════════════════════════════════════
+function startGame(mod, mode) {
+  currentMode = mode;
+  qIndex = 0;
+  correct = 0;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('gameScreen').classList.add('active');
+  document.getElementById('feedbackBar').className = 'feedback-bar';
+
+  if (mode === 'gaps') {
+    questions = [...(mod.gaps || [])];
+    shuffle(questions);
+  } else if (mode === 'sort') {
+    questions = [{ lines: [...mod.lines] }];
+  } else if (mode === 'speech') {
+    questions = (mod.lines || []).map(l => ({ line: l }));
+  }
+
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const total = questions.length;
+  const pct = total > 0 ? (qIndex / total * 100) : 0;
+  document.getElementById('gameProg').style.width = pct + '%';
+  document.getElementById('gameStep').textContent = `${qIndex}/${total}`;
+
+  const content = document.getElementById('gameContent');
+  content.innerHTML = '';
+  document.getElementById('feedbackBar').className = 'feedback-bar';
+
+  if (qIndex >= total) { showResult(); return; }
+
+  if (currentMode === 'gaps') renderGapQuestion(content);
+  else if (currentMode === 'sort') renderSortQuestion(content);
+  else if (currentMode === 'speech') renderSpeechQuestion(content);
+}
+
+// — GAPS —
+function renderGapQuestion(container) {
+  const q = questions[qIndex];
+  const allBlanks = currentModule.gaps.map(g => g.blank);
+  const distractors = shuffle([...allBlanks].filter(b => b !== q.blank)).slice(0, 2);
+  const opts = shuffle([q.blank, ...distractors]);
+
+  const card = document.createElement('div');
+  card.className = 'question-card';
+  card.innerHTML = `
+    <div class="question-type-badge">✏️ Lückentext</div>
+    <div class="gap-fill-area">
+      <span class="gap-word">${q.before}</span>
+      <span class="gap-blank" id="theBlank">___</span>
+      <span class="gap-word">${q.after}</span>
+    </div>
+  `;
+  container.appendChild(card);
+
+  const optsDiv = document.createElement('div');
+  optsDiv.className = 'answer-options';
+  const letters = ['A', 'B', 'C'];
+  opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = `<span class="answer-letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => checkGap(opt, q.blank, btn, opts, optsDiv);
+    optsDiv.appendChild(btn);
+  });
+  container.appendChild(optsDiv);
+}
+
+function checkGap(chosen, correct_ans, btn, opts, optsDiv) {
+  const blank = document.getElementById('theBlank');
+  const btns = optsDiv.querySelectorAll('.answer-btn');
+  btns.forEach(b => b.disabled = true);
+
+  if (chosen === correct_ans) {
+    btn.classList.add('correct');
+    blank.textContent = chosen;
+    blank.classList.add('filled');
+    correct++;
+    showFeedback(true, '✅ Richtig!', `„${chosen}" ist korrekt.`);
+  } else {
+    btn.classList.add('wrong');
+    blank.textContent = chosen;
+    blank.classList.add('wrong');
+    btns.forEach(b => { if (b.querySelector('span:last-child').textContent === correct_ans) b.classList.add('correct'); });
+    showFeedback(false, '❌ Nicht ganz!', `Richtig wäre: „${correct_ans}"`);
+  }
+}
+
+// — SORT —
+function renderSortQuestion(container) {
+  const q = questions[qIndex];
+  sortOrder = shuffle([...q.lines]);
+
+  const card = document.createElement('div');
+  card.className = 'question-card';
+  card.innerHTML = `<div class="question-type-badge">🔀 Reihenfolge</div><div class="question-text">Bringe die Zeilen in die richtige Reihenfolge:</div><div class="question-hint">Tippe auf eine Zeile und dann auf eine andere, um sie zu tauschen.</div>`;
+  container.appendChild(card);
+
+  const list = document.createElement('div');
+  list.className = 'sort-list';
+  list.id = 'sortList';
+  renderSortItems(list);
+  container.appendChild(list);
+
+  const btn = document.createElement('button');
+  btn.className = 'check-order-btn';
+  btn.textContent = 'Reihenfolge prüfen ✓';
+  btn.onclick = () => checkSort(q.lines);
+  container.appendChild(btn);
+}
+
+let selectedSortIdx = null;
+function renderSortItems(list) {
+  selectedSortIdx = null;
+  list.innerHTML = '';
+  sortOrder.forEach((line, i) => {
+    const item = document.createElement('div');
+    item.className = 'sort-item';
+    item.dataset.idx = i;
+    item.innerHTML = `<span class="sort-num">${i+1}</span><span style="flex:1">${line}</span>`;
+    item.onclick = () => handleSortTap(i, list);
+    list.appendChild(item);
+  });
+}
+
+function handleSortTap(idx, list) {
+  const items = list.querySelectorAll('.sort-item');
+  if (selectedSortIdx === null) {
+    selectedSortIdx = idx;
+    items[idx].style.borderColor = 'var(--gold)';
+    items[idx].style.background = 'rgba(245,200,66,0.1)';
+  } else {
+    if (selectedSortIdx !== idx) {
+      [sortOrder[selectedSortIdx], sortOrder[idx]] = [sortOrder[idx], sortOrder[selectedSortIdx]];
+      renderSortItems(list);
+    } else {
+      items[idx].style.borderColor = '';
+      items[idx].style.background = '';
+      selectedSortIdx = null;
+    }
+  }
+}
+
+function checkSort(original) {
+  const list = document.getElementById('sortList');
+  const items = list.querySelectorAll('.sort-item');
+  let allCorrect = true;
+  sortOrder.forEach((line, i) => {
+    if (line === original[i]) {
+      items[i].classList.add('correct-pos');
+    } else {
+      items[i].classList.add('wrong-pos');
+      allCorrect = false;
+    }
+  });
+  if (allCorrect) {
+    correct++;
+    showFeedback(true, '✅ Perfekt!', 'Die Reihenfolge ist genau richtig!');
+  } else {
+    showFeedback(false, '❌ Noch nicht ganz!', 'Schau dir die markierten Zeilen an.');
+  }
+}
+
+// — SPEECH —
+let recognition = null;
+function renderSpeechQuestion(container) {
+  const q = questions[qIndex];
+
+  const card = document.createElement('div');
+  card.className = 'question-card';
+  card.innerHTML = `
+    <div class="question-type-badge">🎙️ Sprechen</div>
+    <div class="question-text">${q.line}</div>
+    <div class="question-hint">Sprich diesen Satz laut nach.</div>
+  `;
+  container.appendChild(card);
+
+  const speechArea = document.createElement('div');
+  speechArea.className = 'speech-area';
+  speechArea.innerHTML = `
+    <button class="mic-btn" id="micBtn" onclick="startListening('${escapeForAttr(q.line)}')">🎙️</button>
+    <div class="speech-status" id="speechStatus">Tippe auf das Mikrofon und sprich</div>
+    <div class="speech-transcript" id="speechTranscript"></div>
+    <div class="speech-result" id="speechResult"></div>
+    <button class="speech-next-btn" id="speechNextBtn" onclick="nextQuestion()">Weiter →</button>
+  `;
+  container.appendChild(speechArea);
+}
+
+function escapeForAttr(s) { return s.replace(/'/g, "\\'"); }
+
+function startListening(expected) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    document.getElementById('speechStatus').textContent = '⚠️ Spracheingabe wird auf diesem Gerät nicht unterstützt.';
+    document.getElementById('speechNextBtn').style.display = 'block';
+    return;
+  }
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRec();
+  recognition.lang = 'de-DE';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 3;
+
+  const micBtn = document.getElementById('micBtn');
+  const status = document.getElementById('speechStatus');
+  const transcript = document.getElementById('speechTranscript');
+  const result = document.getElementById('speechResult');
+  const nextBtn = document.getElementById('speechNextBtn');
+
+  micBtn.classList.add('listening');
+  micBtn.textContent = '⏹️';
+  status.textContent = 'Ich höre zu…';
+  transcript.style.display = 'block';
+  transcript.textContent = '…';
+
+  recognition.onresult = (e) => {
+    const spoken = e.results[0][0].transcript.trim();
+    transcript.textContent = `"${spoken}"`;
+    micBtn.classList.remove('listening');
+    micBtn.textContent = '🎙️';
+
+    const score = similarity(spoken.toLowerCase(), expected.toLowerCase());
+    if (score >= 0.85) {
+      result.className = 'speech-result good';
+      result.textContent = '✅ Sehr gut! Fast perfekt gesprochen.';
+      correct++;
+    } else if (score >= 0.6) {
+      result.className = 'speech-result ok';
+      result.textContent = `⚡ Gut! Ähnlichkeit: ${Math.round(score*100)}%. Noch etwas üben!`;
+      correct += 0.5;
+    } else {
+      result.className = 'speech-result bad';
+      result.textContent = `❌ Ähnlichkeit: ${Math.round(score*100)}%. Schau auf den Text und versuch's nochmal.`;
+    }
+    result.style.display = 'block';
+    nextBtn.style.display = 'block';
+    status.textContent = 'Fertig!';
+  };
+  recognition.onerror = () => {
+    micBtn.classList.remove('listening');
+    micBtn.textContent = '🎙️';
+    status.textContent = 'Nicht erkannt – nochmal versuchen!';
+    nextBtn.style.display = 'block';
+  };
+  recognition.onend = () => {
+    micBtn.classList.remove('listening');
+    if (micBtn.textContent === '⏹️') micBtn.textContent = '🎙️';
+  };
+  recognition.start();
+}
+
+function similarity(a, b) {
+  const aWords = a.split(/\s+/);
+  const bWords = b.split(/\s+/);
+  let matches = 0;
+  aWords.forEach(w => { if (bWords.includes(w)) matches++; });
+  return matches / Math.max(aWords.length, bWords.length);
+}
+
+// ═══════════════════════════════════════════
+// FEEDBACK & FLOW
+// ═══════════════════════════════════════════
+function showFeedback(isCorrect, label, text) {
+  const bar = document.getElementById('feedbackBar');
+  bar.className = 'feedback-bar show ' + (isCorrect ? 'correct' : 'wrong');
+  document.getElementById('feedbackLabel').textContent = label;
+  document.getElementById('feedbackText').textContent = text;
+  document.getElementById('feedbackNext').textContent = qIndex + 1 >= questions.length ? 'Ergebnis sehen 🏁' : 'Weiter →';
+}
+
+function nextQuestion() {
+  document.getElementById('feedbackBar').className = 'feedback-bar';
+  qIndex++;
+  renderQuestion();
+}
+
+// ═══════════════════════════════════════════
+// RESULT
+// ═══════════════════════════════════════════
+function showResult() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('resultScreen').classList.add('active');
+
+  const total = questions.length;
+  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const xpEarned = Math.round(pct / 2);
+
+  // Update module progress
+  const prev = state.progress[currentModule.id] || 0;
+  state.progress[currentModule.id] = Math.max(prev, pct);
+
+  // Unlock next module
+  const allProg = MODULES.every(m => (state.progress[m.id] || 0) >= 50);
+  state.completedModules = MODULES.filter((m, i) => (state.progress[m.id] || 0) >= 50).length;
+
+  addXP(xpEarned);
+
+  let emoji, title, sub;
+  if (pct >= 90) { emoji = '🏆'; title = 'Ausgezeichnet!'; sub = 'Du beherrschst diesen Inhalt wirklich gut!'; }
+  else if (pct >= 70) { emoji = '⭐'; title = 'Super gemacht!'; sub = 'Noch ein bisschen üben und du hast es drauf!'; }
+  else if (pct >= 50) { emoji = '💪'; title = 'Guter Anfang!'; sub = 'Wiederholen macht den Meister – mach weiter!'; }
+  else { emoji = '📖'; title = 'Weiter üben!'; sub = 'Lies den Text nochmal und versuch es erneut.'; }
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSub').textContent = sub;
+  document.getElementById('resultScore').textContent = `${Math.round(correct)}/${total}`;
+  document.getElementById('resultXP').textContent = `+${xpEarned} XP verdient 🌟 · Gesamt: ${state.xp} XP`;
+}
+
+function replayModule() { startGame(currentModule, currentMode); }
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+loadState();
+renderHome();
+</script>
+</body>
+</html>
