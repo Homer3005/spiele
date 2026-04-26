@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ernährungs-Quest 🥦</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap');
+
+  :root {
+    --green: #2ecc71;
+    --green-dark: #27ae60;
+    --orange: #f39c12;
+    --orange-dark: #e67e22;
+    --red: #e74c3c;
+    --blue: #3498db;
+    --blue-dark: #2980b9;
+    --purple: #9b59b6;
+    --bg: #f0fdf4;
+    --card: #ffffff;
+    --text: #1a2a1a;
+    --gray: #95a5a6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    color: var(--text);
+  }
+
+  /* ── HEADER ── */
+  #header {
+    width: 100%;
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 60%, #f39c12 100%);
+    padding: 18px 20px 14px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(46,204,113,.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  #header h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+    color: white;
+    text-shadow: 0 2px 6px rgba(0,0,0,.2);
+    letter-spacing: 1px;
+  }
+  #header .subtitle {
+    color: rgba(255,255,255,.85);
+    font-size: .85rem;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* ── XP BAR ── */
+  #xp-bar-wrap {
+    width: 100%;
+    max-width: 480px;
+    padding: 10px 20px 0;
+  }
+  #xp-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: .8rem;
+    font-weight: 700;
+    color: var(--green-dark);
+    margin-bottom: 4px;
+  }
+  #xp-bar {
+    width: 100%;
+    height: 12px;
+    background: #d5f5e3;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.1);
+  }
+  #xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--green), var(--orange));
+    border-radius: 10px;
+    transition: width .5s cubic-bezier(.34,1.56,.64,1);
+    width: 0%;
+  }
+
+  /* ── MAIN ── */
+  #main {
+    width: 100%;
+    max-width: 480px;
+    padding: 16px 16px 80px;
+    flex: 1;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; animation: fadeIn .3s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── HOME SCREEN ── */
+  #home-screen {
+    text-align: center;
+    padding-top: 20px;
+  }
+  .hero-emoji {
+    font-size: 5rem;
+    line-height: 1;
+    margin-bottom: 12px;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .home-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2rem;
+    color: var(--green-dark);
+    margin-bottom: 6px;
+  }
+  .home-sub {
+    color: #666;
+    font-size: .95rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+
+  /* MODULE CARDS */
+  .module-card {
+    background: white;
+    border-radius: 18px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.08);
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all .2s;
+    text-align: left;
+    width: 100%;
+  }
+  .module-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.13); }
+  .module-card.locked { opacity: .5; cursor: not-allowed; }
+  .module-card.completed { border-color: var(--green); }
+  .module-icon { font-size: 2.2rem; flex-shrink: 0; width: 48px; text-align: center; }
+  .module-info { flex: 1; }
+  .module-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    color: var(--text);
+  }
+  .module-desc { font-size: .78rem; color: #888; font-weight: 600; margin-top: 1px; }
+  .module-progress { font-size: .75rem; font-weight: 800; color: var(--green-dark); }
+  .module-badge { font-size: 1.3rem; flex-shrink: 0; }
+  .module-card[data-color="green"] { border-left: 5px solid #2ecc71; }
+  .module-card[data-color="blue"] { border-left: 5px solid #3498db; }
+  .module-card[data-color="orange"] { border-left: 5px solid #f39c12; }
+  .module-card[data-color="purple"] { border-left: 5px solid #9b59b6; }
+  .module-card[data-color="red"] { border-left: 5px solid #e74c3c; }
+  .module-card[data-color="teal"] { border-left: 5px solid #1abc9c; }
+
+  /* STATS ROW */
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-box {
+    flex: 1;
+    background: white;
+    border-radius: 14px;
+    padding: 12px 10px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
+  }
+  .stat-num { font-family: 'Fredoka One', cursive; font-size: 1.6rem; color: var(--green-dark); }
+  .stat-label { font-size: .7rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ── QUIZ SCREEN ── */
+  #quiz-screen {}
+
+  .module-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .back-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .module-header-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    color: var(--text);
+  }
+
+  /* PROGRESS DOTS */
+  #progress-dots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ddd;
+    transition: background .3s;
+  }
+  .dot.done { background: var(--green); }
+  .dot.current { background: var(--orange); transform: scale(1.3); }
+  .dot.wrong { background: var(--red); }
+
+  /* QUESTION CARD */
+  #question-card {
+    background: white;
+    border-radius: 22px;
+    padding: 22px 20px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.1);
+    margin-bottom: 16px;
+    min-height: 100px;
+  }
+  .q-type-badge {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    background: #eaf9f0;
+    color: var(--green-dark);
+  }
+  #question-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  /* ANSWER BUTTONS */
+  #answers {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .answer-btn {
+    background: white;
+    border: 3px solid #e8f5e9;
+    border-radius: 16px;
+    padding: 14px 18px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .answer-btn:hover:not(:disabled) {
+    border-color: var(--green);
+    background: #f0fff4;
+    transform: translateX(4px);
+  }
+  .answer-btn .letter {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #e8f5e9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: .9rem;
+    flex-shrink: 0;
+    color: var(--green-dark);
+  }
+  .answer-btn.correct {
+    background: #d5f5e3;
+    border-color: var(--green);
+    animation: correctPop .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .answer-btn.correct .letter { background: var(--green); color: white; }
+  .answer-btn.wrong {
+    background: #fdedec;
+    border-color: var(--red);
+    animation: shake .4s ease;
+  }
+  .answer-btn.wrong .letter { background: var(--red); color: white; }
+  .answer-btn:disabled { cursor: not-allowed; }
+
+  @keyframes correctPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  /* FEEDBACK */
+  #feedback {
+    border-radius: 16px;
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: .95rem;
+    margin-bottom: 14px;
+    display: none;
+    line-height: 1.5;
+  }
+  #feedback.correct { background: #d5f5e3; color: #196F3D; border: 2px solid var(--green); }
+  #feedback.wrong { background: #fdedec; color: #922B21; border: 2px solid var(--red); }
+
+  /* NEXT BTN */
+  #next-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--green), var(--green-dark));
+    color: white;
+    border: none;
+    border-radius: 18px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    letter-spacing: .5px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(46,204,113,.35);
+    transition: all .2s;
+    display: none;
+  }
+  #next-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(46,204,113,.45); }
+
+  /* ── RESULTS SCREEN ── */
+  #results-screen { text-align: center; padding-top: 20px; }
+  .results-emoji { font-size: 5rem; margin-bottom: 12px; animation: bounce 1.5s infinite; }
+  .results-title { font-family: 'Fredoka One', cursive; font-size: 2rem; color: var(--green-dark); margin-bottom: 8px; }
+  .results-sub { color: #666; font-size: 1rem; font-weight: 600; margin-bottom: 24px; }
+  .score-circle {
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green), var(--green-dark));
+    margin: 0 auto 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 30px rgba(46,204,113,.4);
+    color: white;
+  }
+  .score-num { font-family: 'Fredoka One', cursive; font-size: 2.6rem; line-height: 1; }
+  .score-label { font-size: .75rem; font-weight: 700; opacity: .85; }
+  .xp-gained {
+    display: inline-block;
+    background: #fff3cd;
+    border: 2px solid var(--orange);
+    border-radius: 14px;
+    padding: 10px 24px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem;
+    color: var(--orange-dark);
+    margin-bottom: 24px;
+  }
+  .result-btns { display: flex; flex-direction: column; gap: 10px; }
+  .btn-primary {
+    padding: 16px;
+    background: linear-gradient(135deg, var(--green), var(--green-dark));
+    color: white;
+    border: none;
+    border-radius: 18px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.15rem;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(46,204,113,.3);
+    transition: all .2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-secondary {
+    padding: 14px;
+    background: white;
+    color: var(--green-dark);
+    border: 3px solid var(--green);
+    border-radius: 18px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-secondary:hover { background: #f0fff4; }
+
+  /* STREAK */
+  .streak-banner {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    border-radius: 14px;
+    padding: 10px 16px;
+    color: white;
+    font-weight: 800;
+    font-size: .9rem;
+    margin-bottom: 14px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(243,156,18,.3);
+  }
+
+  /* CONFETTI */
+  .confetti-piece {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: confettiFall 3s ease-in forwards;
+    pointer-events: none;
+    z-index: 9999;
+    border-radius: 2px;
+  }
+  @keyframes confettiFall {
+    0% { top: -10px; opacity: 1; }
+    100% { top: 110vh; opacity: 0; transform: rotate(720deg) translateX(var(--drift)); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (min-width: 500px) {
+    #header h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>🥦 Ernährungs-Quest</h1>
+  <div class="subtitle">Lern alles über gesunde Ernährung!</div>
+</div>
+
+<div id="xp-bar-wrap">
+  <div id="xp-label">
+    <span>⭐ XP</span>
+    <span id="xp-count">0 / 300 XP</span>
+  </div>
+  <div id="xp-bar"><div id="xp-fill"></div></div>
+</div>
+
+<div id="main">
+
+  <!-- HOME -->
+  <div id="home-screen" class="screen active">
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-num" id="total-xp-display">0</div>
+        <div class="stat-label">XP gesamt</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="modules-done">0/6</div>
+        <div class="stat-label">Module</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="streak-display">🔥 0</div>
+        <div class="stat-label">Streak</div>
+      </div>
+    </div>
+
+    <div id="module-list"></div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz-screen" class="screen">
+    <div class="module-header">
+      <button class="back-btn" onclick="goHome()">←</button>
+      <div>
+        <div class="module-header-title" id="quiz-module-title"></div>
+        <div style="font-size:.75rem;color:#aaa;font-weight:700;" id="quiz-progress-text"></div>
+      </div>
+    </div>
+    <div id="progress-dots"></div>
+    <div id="question-card">
+      <span class="q-type-badge" id="q-type-badge">Frage</span>
+      <div id="question-text"></div>
+    </div>
+    <div id="answers"></div>
+    <div id="feedback"></div>
+    <button id="next-btn" onclick="nextQuestion()">Weiter →</button>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-screen" class="screen">
+    <div class="results-emoji" id="results-emoji">🎉</div>
+    <div class="results-title" id="results-title">Super gemacht!</div>
+    <div class="results-sub" id="results-sub"></div>
+    <div class="score-circle">
+      <div class="score-num" id="score-num">-</div>
+      <div class="score-label">Richtig</div>
+    </div>
+    <div class="xp-gained" id="xp-gained">+0 XP</div>
+    <div class="result-btns">
+      <button class="btn-primary" onclick="retryModule()">🔄 Nochmal versuchen</button>
+      <button class="btn-secondary" onclick="goHome()">🏠 Zurück zur Übersicht</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA – 6 Module with questions
+// ══════════════════════════════════════════
+const MODULES = [
+  {
+    id: 'pyramide',
+    name: 'Lebensmittel-Pyramide',
+    icon: '🔺',
+    color: 'green',
+    desc: 'Portionen & Gruppen',
+    xp: 50,
+    questions: [
+      {
+        text: 'Was sollte man laut Lebensmittelpyramide am meisten trinken?',
+        answers: ['Cola und Säfte', 'Wasser und Getränke (~1,5 L/Tag)', 'Milch', 'Tee mit Zucker'],
+        correct: 1,
+        feedback: '✅ Richtig! Wasser und ungesüßte Getränke bilden die Basis – ca. 1,5 Liter pro Tag!'
+      },
+      {
+        text: 'Wie viele Portionen Obst & Gemüse empfiehlt die Pyramide täglich?',
+        answers: ['1 Portion', '2 Portionen', '5–6 Portionen', '10 Portionen'],
+        correct: 2,
+        feedback: '✅ Genau! Etwa 5–6 Portionen Obst und Gemüse pro Tag – "5 am Tag"!'
+      },
+      {
+        text: 'Wie oft soll man laut Pyramide Getreideprodukte essen?',
+        answers: ['Einmal pro Woche', 'Ca. 4× pro Tag', 'Nur zum Frühstück', 'Gar nicht'],
+        correct: 1,
+        feedback: '✅ Richtig! Getreideprodukte (Brot, Nudeln, Reis) ca. 4× pro Tag – am besten als Vollkorn!'
+      },
+      {
+        text: 'Was steht ganz oben in der Pyramide (sparsam verwenden)?',
+        answers: ['Obst', 'Wasser', 'Öl, Butter & Süßigkeiten', 'Gemüse'],
+        correct: 2,
+        feedback: '✅ Korrekt! Fette, Öle und Extras stehen ganz oben – sparsam einsetzen!'
+      },
+      {
+        text: 'Wie viele Portionen Milchprodukte sind täglich empfohlen?',
+        answers: ['~1 Portion', '~2 Portionen', '~5 Portionen', 'Keine'],
+        correct: 1,
+        feedback: '✅ Ja! Ca. 2 Portionen Milchprodukte (Milch, Joghurt, Käse) täglich.'
+      },
+      {
+        text: 'Eine Portion entspricht ungefähr...',
+        answers: ['Einem ganzen Teller', 'Einer Handvoll', 'Einem Kilo', 'Einem Esslöffel'],
+        correct: 1,
+        feedback: '✅ Richtig! Eine Portion = eine Handvoll – das ist die praktische Faustregel!'
+      },
+      {
+        text: 'Was empfiehlt die Pyramide beim Fleisch?',
+        answers: ['Täglich viel essen', 'Nur Hühnchen', 'Ca. 1 Portion/Tag, bewusst wählen', 'Kein Fleisch'],
+        correct: 2,
+        feedback: '✅ Genau! Fleisch & Wurstwaren ca. 1× täglich – und bewusst, besser pflanzliche Alternativen bevorzugen.'
+      },
+      {
+        text: 'Welches Öl ist laut Pyramide besonders empfehlenswert?',
+        answers: ['Palmöl', 'Schweineschmalz', 'Raps- oder Olivenöl', 'Kokosöl'],
+        correct: 2,
+        feedback: '✅ Stimmt! Pflanzliche Öle wie Raps- und Olivenöl enthalten gesunde ungesättigte Fettsäuren.'
+      }
+    ]
+  },
+  {
+    id: 'fette',
+    name: 'Fette & Fettsäuren',
+    icon: '🫒',
+    color: 'orange',
+    desc: 'Arten, Funktionen & Quellen',
+    xp: 50,
+    questions: [
+      {
+        text: 'Woraus besteht Fett chemisch betrachtet?',
+        answers: ['Stickstoff, Sauerstoff, Eisen', 'Wasserstoff, Sauerstoff, Kohlenstoff', 'Natrium, Kalium, Calcium', 'Glucose und Fructose'],
+        correct: 1,
+        feedback: '✅ Richtig! Fett besteht aus Wasserstoff, Sauerstoff und Kohlenstoff.'
+      },
+      {
+        text: 'Was ist die Hauptaufgabe von Nahrungsfett?',
+        answers: ['Knochen aufbauen', 'Energie liefern', 'Blut bilden', 'Haut färben'],
+        correct: 1,
+        feedback: '✅ Nahrungsfett liefert dem Körper Energie – es ist ein wichtiger Energieträger!'
+      },
+      {
+        text: 'Welche Vitamine brauchen Fett, um vom Körper aufgenommen zu werden?',
+        answers: ['B-Vitamine', 'Vitamin C', 'Vitamine A, D, E, K', 'Alle Vitamine'],
+        correct: 2,
+        feedback: '✅ Genau! Die fettlöslichen Vitamine A, D, E und K brauchen Fett, um im Körper wirken zu können.'
+      },
+      {
+        text: 'Wo speichert der Körper überschüssiges Fett?',
+        answers: ['In den Knochen', 'Im Gehirn', 'Als Fettreserve', 'Im Blut'],
+        correct: 2,
+        feedback: '✅ Korrekt! Überschüssiges Fett wird als Körperfett (Fettreserve) gespeichert – auch zur Wärmeisolierung.'
+      },
+      {
+        text: 'Welche Lebensmittel enthalten tierisches Fett?',
+        answers: ['Oliven und Avocado', 'Walnüsse und Raps', 'Fleisch, Butter, Eier, Milch', 'Brot und Nudeln'],
+        correct: 2,
+        feedback: '✅ Richtig! Fleisch, Geflügel, Wurstwaren, Butter, Eier und Milch sind typische Quellen für tierisches Fett.'
+      },
+      {
+        text: 'Was sind ungesättigte Fettsäuren?',
+        answers: ['Fettsäuren mit Doppelbindung zwischen Kohlenstoffatomen', 'Fettsäuren ohne Kohlenstoff', 'Fette aus Milchprodukten', 'Fette die dick machen'],
+        correct: 0,
+        feedback: '✅ Ja! Ungesättigte Fettsäuren haben Doppelbindungen zwischen Kohlenstoffatomen – sie sind besonders gesund!'
+      },
+      {
+        text: 'Wo kommen vor allem gesättigte Fettsäuren vor?',
+        answers: ['In pflanzlichen Ölen', 'In Nüssen', 'In tierischen Lebensmitteln', 'Im Wasser'],
+        correct: 2,
+        feedback: '✅ Richtig! Gesättigte Fettsäuren stecken vor allem in tierischen Produkten – zu viel davon schadet der Gesundheit.'
+      },
+      {
+        text: 'Wofür benötigt der Körper Fett noch (außer Energie)?',
+        answers: ['Zum Atmen', 'Zur Zellerneuerung (Zellmembran)', 'Zum Laufen', 'Für die Verdauung von Vitamin C'],
+        correct: 1,
+        feedback: '✅ Stimmt! Fett ist Baumaterial der Zellmembran und schützt empfindliche Organe wie Herz und Niere.'
+      }
+    ]
+  },
+  {
+    id: 'kohlenhydrate',
+    name: 'Kohlenhydrate',
+    icon: '🍞',
+    color: 'blue',
+    desc: 'Zucker, Stärke & Energie',
+    xp: 50,
+    questions: [
+      {
+        text: 'Woraus bestehen Kohlenhydrate?',
+        answers: ['Aminosäuren', 'Zuckermolekülen', 'Fettsäuren', 'Vitaminen'],
+        correct: 1,
+        feedback: '✅ Richtig! Kohlenhydrate sind Nährstoffe aus Zuckermolekülen – sie sind unsere wichtigste Energiequelle!'
+      },
+      {
+        text: 'Wie gelangen Kohlenhydrate in verschiedene Körperregionen?',
+        answers: ['Über Nerven', 'Über die Blutbahn', 'Über Muskeln', 'Über Speichel'],
+        correct: 1,
+        feedback: '✅ Genau! Über die Blutbahn gelangen Kohlenhydrate zu Muskeln, Gehirn und allen anderen Organen.'
+      },
+      {
+        text: 'Wie viele Arten von Kohlenhydraten gibt es?',
+        answers: ['Zwei', 'Drei', 'Fünf', 'Sieben'],
+        correct: 1,
+        feedback: '✅ Korrekt! Es gibt drei Arten: Einfachzucker (Monosaccharide), Zweifachzucker (Disaccharide) und Mehrfachzucker (Polysaccharide).'
+      },
+      {
+        text: 'Welche Form kommt Einfachzucker vor?',
+        answers: ['Haushaltszucker', 'Traubenzucker und Fruchtzucker', 'Stärke', 'Ballaststoffe'],
+        correct: 1,
+        feedback: '✅ Richtig! Einfachzucker sind z.B. Traubenzucker (Glucose) und Fruchtzucker (Fructose) – sie gehen schnell ins Blut.'
+      },
+      {
+        text: 'Wofür benötigt der Körper Kohlenhydrate?',
+        answers: ['Nur zum Wachsen', 'Für Energieversorgung und Blutzuckerspiegel', 'Nur für Haare', 'Für starke Knochen'],
+        correct: 1,
+        feedback: '✅ Ja! Kohlenhydrate decken unseren täglichen Energiebedarf und stabilisieren den Blutzuckerspiegel.'
+      },
+      {
+        text: 'In welchen Nahrungsmitteln stecken besonders viele Kohlenhydrate?',
+        answers: ['Fleisch und Fisch', 'Butter und Öl', 'Brot, Getreide, Kartoffeln, Reis, Nudeln', 'Milch und Käse'],
+        correct: 2,
+        feedback: '✅ Genau! Getreideprodukte, Brot, Kartoffeln, Reis und Nudeln sind die Hauptquellen für Kohlenhydrate.'
+      },
+      {
+        text: 'Was passiert mit überschüssigen Kohlenhydraten?',
+        answers: ['Sie werden ausgeschieden', 'Sie werden als Fettreserve angelegt', 'Sie schaden sofort', 'Sie bilden Muskeln'],
+        correct: 1,
+        feedback: '✅ Richtig! Wenn der Körper mehr KH bekommt als er braucht, werden sie als Fettreserve gespeichert.'
+      },
+      {
+        text: 'Wo steckt Haushaltszucker (Saccharose) versteckt?',
+        answers: ['Nur in Süßigkeiten', 'In Limonaden, zuckerhaltigen Getränken und Süßspeisen', 'Nur im Obst', 'In Fleisch'],
+        correct: 1,
+        feedback: '✅ Korrekt! Limonaden und zuckerhaltige Getränke enthalten sehr viel Haushaltszucker – lieber Wasser trinken!'
+      }
+    ]
+  },
+  {
+    id: 'eiweiss',
+    name: 'Eiweiß & Protein',
+    icon: '🥚',
+    color: 'purple',
+    desc: 'Aminosäuren & Proteinquellen',
+    xp: 50,
+    questions: [
+      {
+        text: 'Wie wird Eiweiß in der Wissenschaft noch genannt?',
+        answers: ['Glukose', 'Protein', 'Lipid', 'Mineral'],
+        correct: 1,
+        feedback: '✅ Richtig! Protein ist der wissenschaftliche Begriff für Eiweiß – beide Begriffe meinen dasselbe.'
+      },
+      {
+        text: 'Woraus entstehen Proteine?',
+        answers: ['Fettsäuren', 'Zuckermolekülen', 'Aminosäuren', 'Vitaminen'],
+        correct: 2,
+        feedback: '✅ Genau! Aminosäuren schließen sich zu Ketten zusammen und bilden so Proteine.'
+      },
+      {
+        text: 'Wofür braucht der Körper Eiweiß?',
+        answers: ['Nur zum Schlafen', 'Für Muskeln, Gehirn, Heilung und Wachstum', 'Nur für die Verdauung', 'Für Knochen allein'],
+        correct: 1,
+        feedback: '✅ Richtig! Eiweiß stärkt Muskeln, unterstützt die Gehirnfunktion, fördert die Wundheilung und das Wachstum.'
+      },
+      {
+        text: 'In welchem Lebensmittel steckt viel tierisches Eiweiß?',
+        answers: ['Kartoffeln', 'Linsen', 'Hähnchenbrust und Ei', 'Brot'],
+        correct: 2,
+        feedback: '✅ Hähnchenbrust, Eier, Fisch und Milchprodukte sind hervorragende Quellen für tierisches Eiweiß.'
+      },
+      {
+        text: 'Was sind gute pflanzliche Eiweißquellen?',
+        answers: ['Zucker und Salz', 'Hülsenfrüchte, Tofu, Nüsse', 'Butter und Sahne', 'Weißbrot'],
+        correct: 1,
+        feedback: '✅ Korrekt! Hülsenfrüchte (Bohnen, Linsen), Tofu und Nüsse liefern viel pflanzliches Eiweiß.'
+      },
+      {
+        text: 'Können Vegetarier genug Eiweiß bekommen?',
+        answers: ['Nein, das ist unmöglich', 'Ja, durch pflanzliche Proteinquellen', 'Nur durch Eier', 'Nur durch Fisch'],
+        correct: 1,
+        feedback: '✅ Ja! Vegetarier können tierisches Eiweiß gut durch pflanzliche Alternativen ersetzen.'
+      },
+      {
+        text: 'Was passiert bei dauerhaft zu wenig Eiweiß?',
+        answers: ['Man wird schneller', 'Muskeln schwinden, Wundheilung gestört', 'Nichts passiert', 'Man bekommt mehr Energie'],
+        correct: 1,
+        feedback: '✅ Richtig! Bei Eiweißmangel schwinden Muskeln, Wunden heilen schlecht und Mangelkrankheiten können auftreten.'
+      },
+      {
+        text: 'Was enthält mehr Protein im Ei: das Weiße oder das Gelbe?',
+        answers: ['Das Eigelb (Gelbe)', 'Das Eiweiß (Weiße)', 'Beide gleich viel', 'Gar keins'],
+        correct: 1,
+        feedback: '✅ Das Eiweiß (Weiße) enthält mehr Protein als das Eigelb – daher auch der Name "Eiweiß"!'
+      }
+    ]
+  },
+  {
+    id: 'ballaststoffe',
+    name: 'Ballaststoffe',
+    icon: '🥬',
+    color: 'teal',
+    desc: 'Verdauung & Darmgesundheit',
+    xp: 50,
+    questions: [
+      {
+        text: 'Was sind Ballaststoffe?',
+        answers: ['Leckere Süßigkeiten', 'Unverdauliche Nahrungsbestandteile aus Pflanzen', 'Eine Art Fett', 'Mineralstoffe im Blut'],
+        correct: 1,
+        feedback: '✅ Richtig! Ballaststoffe sind unverdauliche Bestandteile aus pflanzlichen Lebensmitteln.'
+      },
+      {
+        text: 'Was machen Ballaststoffe im Magen?',
+        answers: ['Sie lösen sich schnell auf', 'Sie quellen auf und machen satt', 'Sie erzeugen Energie', 'Sie werden sofort aufgenommen'],
+        correct: 1,
+        feedback: '✅ Genau! Ballaststoffe quellen auf, füllen den Magen und halten länger satt.'
+      },
+      {
+        text: 'Wofür sind Ballaststoffe im Dickdarm gut?',
+        answers: ['Für die Knochenentwicklung', 'Für eine gute Verdauung und Mikrobiota', 'Für die Sehkraft', 'Für den Blutdruck'],
+        correct: 1,
+        feedback: '✅ Korrekt! Im Dickdarm dienen Ballaststoffe der gesunden Mikrobiota (Darmbakterien) – das stärkt das Immunsystem!'
+      },
+      {
+        text: 'Wie viel Ballaststoffe sollten Erwachsene täglich essen?',
+        answers: ['5 g', '10 g', 'Mindestens 30 g', '100 g'],
+        correct: 2,
+        feedback: '✅ Die Deutsche Gesellschaft für Ernährung (DGE) empfiehlt mindestens 30 g Ballaststoffe pro Tag!'
+      },
+      {
+        text: 'In welchen Lebensmitteln stecken besonders viele Ballaststoffe?',
+        answers: ['Fleisch und Fisch', 'Süßigkeiten', 'Hülsenfrüchte, Gemüse, Vollkorn, Obst', 'Milch und Käse'],
+        correct: 2,
+        feedback: '✅ Richtig! Hülsenfrüchte, Gemüse, Vollkornprodukte und Obst sind die besten Ballaststoffquellen.'
+      },
+      {
+        text: 'Was ist Vollkorn und warum ist es besser?',
+        answers: ['Eine Brotsorte aus Weißmehl', 'Getreide mit Randschichten – mehr Vitamine und Ballaststoffe', 'Gebäck mit Körnern drauf', 'Weizenkorn ohne Schale'],
+        correct: 1,
+        feedback: '✅ Vollkorn enthält die Randschichten des Getreidekorns – dort stecken die meisten Ballaststoffe, Vitamine und Mineralien!'
+      },
+      {
+        text: 'Was schützen Ballaststoffe laut Text?',
+        answers: ['Vor Sonnenbrand', 'Vor Krankheitserregern (schützt das Immunsystem)', 'Vor Müdigkeit', 'Vor Erkältungen allein'],
+        correct: 1,
+        feedback: '✅ Ja! Ballaststoffe fördern eine gesunde Darmflora, die unseren Körper vor Krankheitserregern schützt.'
+      },
+      {
+        text: 'Kommen Ballaststoffe in tierischen Lebensmitteln vor?',
+        answers: ['Ja, viel in Fleisch', 'Ja, in Milch', 'Nein, fast ausschließlich in Pflanzen', 'Ja, in Fisch'],
+        correct: 2,
+        feedback: '✅ Korrekt! Ballaststoffe kommen fast ausschließlich in pflanzlichen Lebensmitteln vor.'
+      }
+    ]
+  },
+  {
+    id: 'hygiene',
+    name: 'Hygiene in der Küche',
+    icon: '🧼',
+    color: 'red',
+    desc: 'Sauberkeit & Sicherheit',
+    xp: 50,
+    questions: [
+      {
+        text: 'Was versteht man unter Hygiene in der Küche?',
+        answers: ['Nur das Putzen der Böden', 'Maßnahmen zur Vermeidung von Krankheiten durch Keime', 'Das Ordnen von Gewürzen', 'Das Dekorieren der Küche'],
+        correct: 1,
+        feedback: '✅ Richtig! Hygiene bedeutet, durch Sauberkeit zu verhindern, dass Keime in unsere Nahrung gelangen.'
+      },
+      {
+        text: 'Was gehört zur persönlichen Hygiene in der Küche?',
+        answers: ['Schmuck und Ringe ablegen, Haare zurückbinden, Hände waschen', 'Schürze anziehen reicht', 'Keine Maßnahmen nötig', 'Nur Wunden abdecken'],
+        correct: 0,
+        feedback: '✅ Ja! Fingerringe ablegen, Haare zurückbinden, Hände waschen und Wunden abdecken – alles zusammen macht gute persönliche Hygiene!'
+      },
+      {
+        text: 'Wann muss man sich in der Küche die Hände waschen?',
+        answers: ['Nur vor dem Kochen', 'Vor und nach der Lebensmittelzubereitung', 'Nur nach dem Toilettengang', 'Einmal täglich reicht'],
+        correct: 1,
+        feedback: '✅ Richtig! Hände vor und nach der Lebensmittelzubereitung waschen – und natürlich auch nach dem Toilettengang!'
+      },
+      {
+        text: 'Was macht man mit Lappen und Tüchern in der Küche?',
+        answers: ['Für alles denselben benutzen', 'Nur ihren Zweck entsprechend verwenden und regelmäßig wechseln', 'Nie wechseln', 'Im Kühlschrank aufbewahren'],
+        correct: 1,
+        feedback: '✅ Korrekt! Lappen nur für ihren Zweck verwenden und regelmäßig wechseln – alte Lappen sind Keimschleudern!'
+      },
+      {
+        text: 'Was gehört zur Lebensmittelhygiene?',
+        answers: ['Obst roh essen ohne waschen', 'Obst & Gemüse waschen, Kühlkette nicht unterbrechen, verderbliche Lebensmittel kühl lagern', 'Lebensmittel immer bei Zimmertemperatur lassen', 'Fleisch und Gemüse zusammen schneiden'],
+        correct: 1,
+        feedback: '✅ Genau! Obst waschen, Kühlkette einhalten, verderbliche Sachen kühl lagern – das verhindert Keimwachstum.'
+      },
+      {
+        text: 'Was soll man mit aufgetauten Flüssigkeiten machen?',
+        answers: ['Als Soße verwenden', 'Wegschütten', 'Im Kühlschrank lagern', 'Kochen und trinken'],
+        correct: 1,
+        feedback: '✅ Richtig! Flüssigkeiten von aufgetautem Fleisch oder Fisch müssen weggeschüttet werden – sie enthalten viele Keime!'
+      },
+      {
+        text: 'Was passiert, wenn man mit zwei Löffeln probiert?',
+        answers: ['Das schmeckt besser', 'Hygienisches Probieren: erst Nr. 1 probieren, dann Nr. 2 verwenden', 'Das ist unhöflich', 'Das macht die Speise schärfer'],
+        correct: 1,
+        feedback: '✅ Korrekt! Mit Löffel Nr. 1 probieren, den nicht mehr in die Speise tauchen, mit Löffel Nr. 2 weitermachen – so bleibt alles hygienisch!'
+      },
+      {
+        text: 'Wie viele Hygienebereiche gibt es in der Küche?',
+        answers: ['Einen', 'Zwei', 'Drei', 'Fünf'],
+        correct: 2,
+        feedback: '✅ Genau drei: 1. Persönliche Hygiene, 2. Hygiene am Arbeitsplatz, 3. Lebensmittelhygiene!'
+      }
+    ]
+  }
+];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let state = {
+  xp: 0,
+  streak: 0,
+  lastPlayDate: null,
+  moduleProgress: {} // {moduleId: {completed: bool, bestScore: n, played: bool}}
+};
+
+let quiz = {
+  moduleId: null,
+  questions: [],
+  currentIndex: 0,
+  correctCount: 0,
+  answered: false,
+  results: []
+};
+
+// ══════════════════════════════════════════
+// PERSISTENCE
+// ══════════════════════════════════════════
+function saveState() {
+  try { localStorage.setItem('ernaehrung_quest', JSON.stringify(state)); } catch(e){}
+}
+function loadState() {
+  try {
+    const s = localStorage.getItem('ernaehrung_quest');
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch(e){}
+}
+
+// ══════════════════════════════════════════
+// HOME SCREEN
+// ══════════════════════════════════════════
+function renderHome() {
+  showScreen('home-screen');
+  updateXPBar();
+
+  document.getElementById('total-xp-display').textContent = state.xp;
+  const done = Object.values(state.moduleProgress).filter(p => p.completed).length;
+  document.getElementById('modules-done').textContent = done + '/6';
+  document.getElementById('streak-display').textContent = '🔥 ' + state.streak;
+
+  const list = document.getElementById('module-list');
+  list.innerHTML = '';
+  MODULES.forEach((m, i) => {
+    const prog = state.moduleProgress[m.id] || {};
+    const card = document.createElement('button');
+    card.className = 'module-card' + (prog.completed ? ' completed' : '');
+    card.setAttribute('data-color', m.color);
+    card.onclick = () => startModule(m.id);
+    const bestScore = prog.bestScore !== undefined ? prog.bestScore : '–';
+    const total = m.questions.length;
+    card.innerHTML = `
+      <div class="module-icon">${m.icon}</div>
+      <div class="module-info">
+        <div class="module-name">${m.name}</div>
+        <div class="module-desc">${m.desc}</div>
+        <div class="module-progress">${prog.played ? `Bestes Ergebnis: ${prog.bestScore}/${total}` : 'Noch nicht gespielt'}</div>
+      </div>
+      <div class="module-badge">${prog.completed ? '✅' : '▶️'}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+// ══════════════════════════════════════════
+// QUIZ LOGIC
+// ══════════════════════════════════════════
+function startModule(moduleId) {
+  const mod = MODULES.find(m => m.id === moduleId);
+  quiz.moduleId = moduleId;
+  quiz.questions = shuffle([...mod.questions]);
+  quiz.currentIndex = 0;
+  quiz.correctCount = 0;
+  quiz.answered = false;
+  quiz.results = [];
+
+  document.getElementById('quiz-module-title').textContent = mod.icon + ' ' + mod.name;
+  showScreen('quiz-screen');
+  renderQuestion();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderQuestion() {
+  const q = quiz.questions[quiz.currentIndex];
+  const total = quiz.questions.length;
+  quiz.answered = false;
+
+  document.getElementById('quiz-progress-text').textContent =
+    `Frage ${quiz.currentIndex + 1} von ${total}`;
+
+  // Progress dots
+  const dots = document.getElementById('progress-dots');
+  dots.innerHTML = '';
+  quiz.questions.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    if (i < quiz.currentIndex) {
+      d.classList.add(quiz.results[i] ? 'done' : 'wrong');
+    } else if (i === quiz.currentIndex) {
+      d.classList.add('current');
+    }
+    dots.appendChild(d);
+  });
+
+  // Question
+  document.getElementById('q-type-badge').textContent = '❓ Frage ' + (quiz.currentIndex + 1);
+  document.getElementById('question-text').textContent = q.text;
+
+  // Answers – shuffle answer order
+  const letters = ['A', 'B', 'C', 'D'];
+  const answersDiv = document.getElementById('answers');
+  answersDiv.innerHTML = '';
+
+  // Create indexed answers and shuffle
+  const indexed = q.answers.map((a, i) => ({ text: a, orig: i }));
+  const shuffledAnswers = shuffle(indexed);
+
+  shuffledAnswers.forEach((ans, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = `<span class="letter">${letters[idx]}</span><span>${ans.text}</span>`;
+    btn.onclick = () => selectAnswer(btn, ans.orig, q);
+    answersDiv.appendChild(btn);
+  });
+
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('next-btn').style.display = 'none';
+}
+
+function selectAnswer(btn, origIndex, q) {
+  if (quiz.answered) return;
+  quiz.answered = true;
+
+  const correct = origIndex === q.correct;
+  const allBtns = document.querySelectorAll('.answer-btn');
+
+  allBtns.forEach(b => b.disabled = true);
+
+  if (correct) {
+    btn.classList.add('correct');
+    quiz.correctCount++;
+    quiz.results[quiz.currentIndex] = true;
+  } else {
+    btn.classList.add('wrong');
+    quiz.results[quiz.currentIndex] = false;
+    // Highlight correct
+    allBtns.forEach(b => {
+      const span = b.querySelector('span:last-child');
+      if (span && span.textContent === q.answers[q.correct]) {
+        b.classList.add('correct');
+      }
+    });
+  }
+
+  const fb = document.getElementById('feedback');
+  fb.className = correct ? 'correct' : 'wrong';
+  fb.style.display = 'block';
+  fb.textContent = correct ? q.feedback : '❌ Leider falsch! ' + q.feedback.replace('✅ ', '');
+
+  document.getElementById('next-btn').style.display = 'block';
+  document.getElementById('next-btn').textContent =
+    quiz.currentIndex < quiz.questions.length - 1 ? 'Weiter →' : 'Ergebnis anzeigen 🎯';
+}
+
+function nextQuestion() {
+  quiz.currentIndex++;
+  if (quiz.currentIndex >= quiz.questions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+// ══════════════════════════════════════════
+// RESULTS
+// ══════════════════════════════════════════
+function showResults() {
+  const total = quiz.questions.length;
+  const score = quiz.correctCount;
+  const pct = score / total;
+  const mod = MODULES.find(m => m.id === quiz.moduleId);
+
+  // XP calculation
+  const xpGained = Math.round(mod.xp * pct);
+  state.xp += xpGained;
+
+  // Module progress
+  if (!state.moduleProgress[quiz.moduleId]) state.moduleProgress[quiz.moduleId] = {};
+  const prog = state.moduleProgress[quiz.moduleId];
+  prog.played = true;
+  if (!prog.bestScore || score > prog.bestScore) prog.bestScore = score;
+  if (pct >= 0.7) prog.completed = true;
+
+  // Streak
+  const today = new Date().toDateString();
+  if (state.lastPlayDate !== today) {
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    state.streak = state.lastPlayDate === yesterday ? state.streak + 1 : 1;
+    state.lastPlayDate = today;
+  }
+
+  saveState();
+
+  // UI
+  let emoji, title, sub;
+  if (pct === 1) { emoji = '🏆'; title = 'Perfekt!'; sub = 'Du hast alles richtig! Einfach klasse!'; }
+  else if (pct >= 0.8) { emoji = '🌟'; title = 'Super!'; sub = 'Fast perfekt – du kennst dich aus!'; }
+  else if (pct >= 0.6) { emoji = '😊'; title = 'Gut gemacht!'; sub = 'Mehr als die Hälfte richtig – weiter so!'; }
+  else { emoji = '💪'; title = 'Weiter üben!'; sub = 'Nochmal versuchen – du schaffst das!'; }
+
+  document.getElementById('results-emoji').textContent = emoji;
+  document.getElementById('results-title').textContent = title;
+  document.getElementById('results-sub').textContent = sub;
+  document.getElementById('score-num').textContent = score + '/' + total;
+  document.getElementById('xp-gained').textContent = '+' + xpGained + ' XP verdient! ⭐';
+
+  showScreen('results-screen');
+  updateXPBar();
+
+  if (pct === 1) launchConfetti();
+}
+
+function retryModule() { startModule(quiz.moduleId); }
+function goHome() { renderHome(); }
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function updateXPBar() {
+  const maxXP = 300;
+  const pct = Math.min(100, (state.xp / maxXP) * 100);
+  document.getElementById('xp-fill').style.width = pct + '%';
+  document.getElementById('xp-count').textContent = state.xp + ' / ' + maxXP + ' XP';
+}
+
+function launchConfetti() {
+  const colors = ['#2ecc71','#f39c12','#3498db','#e74c3c','#9b59b6','#1abc9c'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'confetti-piece';
+      const drift = (Math.random() - 0.5) * 200;
+      c.style.cssText = `
+        left: ${Math.random() * 100}vw;
+        background: ${colors[Math.floor(Math.random() * colors.length)]};
+        animation-duration: ${2 + Math.random() * 2}s;
+        --drift: ${drift}px;
+        transform: rotate(${Math.random() * 360}deg);
+        width: ${6 + Math.random() * 8}px;
+        height: ${6 + Math.random() * 8}px;
+        border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+      `;
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 5000);
+    }, i * 50);
+  }
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadState();
+renderHome();
+</script>
+</body>
+</html>
