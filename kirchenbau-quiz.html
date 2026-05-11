@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1410">
+    <link rel="manifest" href="manifest.json">
+    <title>⛪ Bauhütte – Romanik & Gotik</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --bg-dark: #1a1410;
+            --bg-card: #ffffff;
+            --gold: #F5C842;
+            --gold-deep: #c99a1f;
+            --romanik: #b8662f;
+            --romanik-light: #f4e3d0;
+            --romanik-deep: #6b3a14;
+            --gotik: #3a5a9c;
+            --gotik-light: #d8e1f3;
+            --gotik-deep: #1f3666;
+            --text: #1a1410;
+            --text-mute: #6b7280;
+            --border: #e5e7eb;
+            --green: #22c55e;
+            --green-light: #dcfce7;
+            --red: #ef4444;
+            --red-light: #fee2e2;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: var(--bg-dark);
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Background scenery per screen */
+        #homeScreen { background: linear-gradient(160deg, #2a1f17 0%, #1a1410 70%); }
+        .quiz-bg-romanik { background: linear-gradient(165deg, #6b3a14 0%, #2a1f17 100%); }
+        .quiz-bg-gotik { background: linear-gradient(165deg, #1f3666 0%, #1a1410 100%); }
+        .quiz-bg-mix { background: linear-gradient(165deg, #6b3a14 0%, #1f3666 100%); }
+
+        .screen { display: none; min-height: 100vh; padding: 24px 16px 32px; }
+        .screen.active { display: flex; flex-direction: column; align-items: center; }
+        .inner { max-width: 480px; width: 100%; margin: 0 auto; }
+
+        /* Home */
+        .home-header { text-align: center; padding: 32px 0 16px; }
+        .crest {
+            width: 72px; height: 72px; margin: 0 auto 14px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, var(--gold) 0%, var(--gold-deep) 100%);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px rgba(245,200,66,0.3);
+            font-size: 38px;
+        }
+        h1 { font-size: 32px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .home-subtitle { color: rgba(255,255,255,0.55); font-size: 14px; margin-bottom: 4px; }
+        .home-tagline { color: var(--gold); font-size: 13px; font-weight: 600; letter-spacing: 0.3px; margin-bottom: 24px; }
+
+        /* XP / Streak strip */
+        .stats-strip {
+            display: flex; gap: 8px; margin-bottom: 20px;
+        }
+        .stat-pill {
+            flex: 1;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 10px 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .stat-icon { font-size: 18px; }
+        .stat-content { flex: 1; min-width: 0; }
+        .stat-label { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .stat-value { font-size: 15px; font-weight: 800; color: white; line-height: 1.2; }
+        .xp-bar-wrap { margin-top: 4px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+        .xp-bar-fill { height: 100%; background: var(--gold); border-radius: 4px; transition: width 0.5s ease; }
+
+        /* Bereich cards */
+        .section-label {
+            font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.5); text-transform: uppercase;
+            margin: 8px 4px 10px;
+        }
+        .bereich-row { display: flex; flex-direction: column; gap: 12px; margin-bottom: 8px; }
+        .bereich-card {
+            background: var(--bg-card); border-radius: 22px;
+            padding: 0; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.15s ease;
+        }
+        .bereich-card:active { transform: scale(0.985); }
+        .bereich-header {
+            padding: 16px 18px 12px;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .bereich-card.romanik .bereich-header { background: linear-gradient(135deg, var(--romanik) 0%, var(--romanik-deep) 100%); color: white; }
+        .bereich-card.gotik .bereich-header { background: linear-gradient(135deg, var(--gotik) 0%, var(--gotik-deep) 100%); color: white; }
+        .bereich-card.mix .bereich-header { background: linear-gradient(135deg, var(--romanik) 0%, var(--gotik) 100%); color: white; }
+        .bereich-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .bereich-title { font-size: 18px; font-weight: 800; line-height: 1.1; }
+        .bereich-subtitle { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+        .bereich-body {
+            padding: 12px 14px 14px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        }
+        .thema-chip {
+            background: #f9fafb; border: 1px solid var(--border);
+            border-radius: 12px; padding: 9px 10px;
+            font-size: 11.5px; font-weight: 700; color: var(--text);
+            display: flex; align-items: center; gap: 6px;
+            cursor: pointer;
+            transition: all 0.12s ease;
+        }
+        .thema-chip:active { transform: scale(0.96); background: #f1f1f1; }
+        .thema-chip .chip-emoji { font-size: 14px; }
+        .bereich-full-btn {
+            margin: 0 14px 14px; padding: 11px;
+            background: var(--text); color: white;
+            font-size: 13px; font-weight: 700;
+            border: none; border-radius: 12px; cursor: pointer;
+            font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            width: calc(100% - 28px);
+        }
+        .bereich-full-btn:active { transform: scale(0.98); }
+
+        /* Footer */
+        .home-footer {
+            margin-top: 20px; padding: 14px;
+            font-size: 11px; color: rgba(255,255,255,0.35);
+            text-align: center; line-height: 1.5;
+        }
+        .reset-link { color: rgba(255,255,255,0.45); text-decoration: underline; cursor: pointer; }
+
+        /* Quiz screen */
+        #quizScreen .inner { padding-top: 8px; }
+        .quiz-top {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; color: white; font-size: 12px; font-weight: 600;
+        }
+        .quiz-back {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+            color: white; border-radius: 99px; padding: 6px 12px;
+            cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 600;
+        }
+        .quiz-progress-text { opacity: 0.7; }
+        .prog-track {
+            width: 100%; height: 8px;
+            background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden;
+            margin-bottom: 16px;
+        }
+        .prog-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold) 0%, #ffe27a 100%);
+            border-radius: 99px; transition: width 0.4s ease; width: 0%;
+        }
+        .quiz-card {
+            background: var(--bg-card); color: var(--text);
+            border-radius: 24px; padding: 22px 20px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+        }
+        .stil-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            border-radius: 99px; padding: 4px 12px;
+            font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
+            margin-bottom: 14px;
+        }
+        .stil-pill.romanik { background: var(--romanik-light); color: var(--romanik-deep); }
+        .stil-pill.gotik { background: var(--gotik-light); color: var(--gotik-deep); }
+        .mech-pill {
+            display: inline-flex; align-items: center; gap: 4px;
+            border-radius: 99px; padding: 3px 10px;
+            font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+            background: #f3f4f6; color: #6b7280; margin-left: 6px; margin-bottom: 14px;
+        }
+        .question-text {
+            font-size: 16.5px; font-weight: 700; color: var(--text);
+            line-height: 1.4; margin-bottom: 16px;
+        }
+        .question-text .luecke {
+            display: inline-block; min-width: 60px;
+            border-bottom: 2px dashed #9ca3af;
+            color: #9ca3af; padding: 0 6px;
+            font-weight: 800;
+        }
+        .question-text .luecke.filled { border-bottom-style: solid; color: var(--text); }
+
+        .hint-svg-wrap {
+            background: #f9fafb; border-radius: 14px; padding: 12px;
+            margin-bottom: 14px; display: flex; justify-content: center;
+            min-height: 100px;
+        }
+        .hint-svg-wrap svg { max-width: 100%; height: auto; max-height: 160px; }
+
+        /* Answer buttons (text MC) */
+        .answers { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+        .answer-btn {
+            width: 100%; background: #f9fafb; border: 2px solid var(--border);
+            border-radius: 14px; padding: 13px 14px;
+            display: flex; align-items: center; gap: 12px;
+            cursor: pointer; text-align: left; font-family: inherit;
+            transition: border-color 0.15s, background 0.15s, transform 0.1s;
+            color: var(--text);
+        }
+        .answer-btn:active:not(:disabled) { transform: scale(0.98); }
+        .answer-btn:disabled { cursor: default; }
+        .answer-btn.a-correct { background: var(--green-light) !important; border-color: var(--green) !important; }
+        .answer-btn.a-wrong { background: var(--red-light) !important; border-color: var(--red) !important; }
+        .answer-btn.a-dimmed { opacity: 0.45; }
+        .ans-letter {
+            width: 28px; height: 28px; border-radius: 50%; background: #e5e7eb;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 800; color: #374151; flex-shrink: 0;
+        }
+        .ans-text { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.3; }
+        .ans-icon { font-size: 18px; flex-shrink: 0; min-width: 20px; }
+
+        /* Bild-MC: 2x2 grid of images */
+        .answers-bild {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+        }
+        .answer-bild-btn {
+            background: #f9fafb; border: 2px solid var(--border);
+            border-radius: 14px; padding: 10px;
+            cursor: pointer; font-family: inherit;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            transition: all 0.15s ease;
+        }
+        .answer-bild-btn:active:not(:disabled) { transform: scale(0.97); }
+        .answer-bild-btn:disabled { cursor: default; }
+        .answer-bild-btn.a-correct { background: var(--green-light) !important; border-color: var(--green) !important; }
+        .answer-bild-btn.a-wrong { background: var(--red-light) !important; border-color: var(--red) !important; }
+        .answer-bild-btn.a-dimmed { opacity: 0.4; }
+        .answer-bild-btn svg { max-width: 100%; height: 70px; }
+        .answer-bild-btn .bild-label { font-size: 12px; font-weight: 700; color: var(--text); text-align: center; }
+
+        /* Stil-Sortierer (2 large buttons) */
+        .answers-stil {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+        }
+        .stil-btn {
+            border: 2px solid var(--border);
+            border-radius: 16px; padding: 16px 12px;
+            cursor: pointer; font-family: inherit;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            transition: all 0.15s ease;
+            font-size: 15px; font-weight: 800;
+        }
+        .stil-btn:active:not(:disabled) { transform: scale(0.97); }
+        .stil-btn:disabled { cursor: default; }
+        .stil-btn.s-romanik { background: var(--romanik-light); color: var(--romanik-deep); border-color: var(--romanik); }
+        .stil-btn.s-gotik { background: var(--gotik-light); color: var(--gotik-deep); border-color: var(--gotik); }
+        .stil-btn.a-correct::after { content: "✓"; font-size: 16px; color: var(--green); }
+        .stil-btn.a-wrong::after { content: "✗"; font-size: 16px; color: var(--red); }
+        .stil-btn.a-dimmed { opacity: 0.4; }
+        .stil-btn small { font-size: 11px; font-weight: 600; opacity: 0.7; text-transform: none; letter-spacing: 0; }
+
+        /* Wahr/Falsch (2 buttons) */
+        .answers-wf {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+        }
+        .wf-btn {
+            border: 2px solid var(--border); background: #f9fafb;
+            border-radius: 14px; padding: 18px;
+            cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all 0.15s ease;
+            font-size: 16px; font-weight: 800; color: var(--text);
+        }
+        .wf-btn:active:not(:disabled) { transform: scale(0.97); }
+        .wf-btn:disabled { cursor: default; }
+        .wf-btn.a-correct { background: var(--green-light) !important; border-color: var(--green) !important; }
+        .wf-btn.a-wrong { background: var(--red-light) !important; border-color: var(--red) !important; }
+        .wf-btn.a-dimmed { opacity: 0.4; }
+
+        /* Beschriften: Bild mit Hotspots oben, Optionen unten */
+        .beschriften-image-wrap {
+            background: #f9fafb; border-radius: 14px; padding: 16px;
+            margin-bottom: 14px; position: relative;
+        }
+        .hotspot {
+            position: absolute;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: var(--gold); color: var(--text);
+            border: 2px solid white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 800;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .hotspot.target {
+            background: var(--text); color: var(--gold);
+            animation: pulse 1.4s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.18); }
+        }
+
+        /* Feedback */
+        .feedback-box {
+            border-radius: 14px; padding: 14px; margin-bottom: 14px;
+            border: 1px solid; display: none;
+            animation: fadeUp 0.25s ease;
+        }
+        .feedback-box.show { display: block; }
+        .fb-correct { background: #f0fdf4; border-color: #86efac; }
+        .fb-wrong { background: #fef2f2; border-color: #fca5a5; }
+        .fb-title { font-size: 14px; font-weight: 800; margin-bottom: 6px; color: var(--text); }
+        .fb-correct .fb-title { color: #15803d; }
+        .fb-wrong .fb-title { color: #b91c1c; }
+        .fb-fact { font-size: 13px; color: #374151; line-height: 1.5; }
+
+        /* Next button */
+        .btn-next {
+            width: 100%;
+            background: linear-gradient(90deg, var(--gold) 0%, var(--gold-deep) 100%);
+            color: var(--text);
+            font-size: 15px; font-weight: 800;
+            padding: 14px; border: none; border-radius: 14px;
+            cursor: pointer;
+            display: none; align-items: center; justify-content: center; gap: 6px;
+            font-family: inherit; animation: fadeUp 0.25s ease;
+        }
+        .btn-next.show { display: flex; }
+        .btn-next:active { transform: scale(0.98); }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* End screen */
+        #endScreen .inner { padding-top: 32px; }
+        .end-card {
+            background: white; color: var(--text);
+            border-radius: 24px; padding: 28px 22px;
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+        }
+        .end-emoji { font-size: 64px; margin-bottom: 8px; line-height: 1; }
+        .end-title { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+        .end-subtitle { color: var(--text-mute); font-size: 14px; margin-bottom: 18px; }
+        .end-stats {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+            margin-bottom: 20px;
+        }
+        .end-stat {
+            background: #f9fafb; border-radius: 12px; padding: 10px;
+        }
+        .end-stat-value { font-size: 20px; font-weight: 800; color: var(--text); }
+        .end-stat-label { font-size: 10px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-top: 2px; }
+        .end-actions { display: flex; flex-direction: column; gap: 8px; }
+        .btn-primary {
+            background: linear-gradient(90deg, var(--gold) 0%, var(--gold-deep) 100%);
+            color: var(--text);
+            font-size: 15px; font-weight: 800;
+            padding: 14px; border: none; border-radius: 14px;
+            cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-mute);
+            font-size: 13px; font-weight: 700;
+            padding: 10px; border: none; border-radius: 14px;
+            cursor: pointer; font-family: inherit;
+        }
+
+        /* Confetti */
+        .confetti-wrap {
+            position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 100;
+        }
+        .confetto {
+            position: absolute; top: -20px;
+            width: 10px; height: 14px;
+            opacity: 0.95;
+            animation: confettiFall linear forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0.5; }
+        }
+
+        /* Streak burst */
+        .streak-burst {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-deep) 100%);
+            color: var(--text);
+            padding: 16px 26px; border-radius: 20px;
+            font-size: 18px; font-weight: 800;
+            box-shadow: 0 12px 40px rgba(245,200,66,0.5);
+            z-index: 200; pointer-events: none;
+            animation: burstAnim 1.3s ease forwards;
+        }
+        @keyframes burstAnim {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-10deg); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.1) rotate(3deg); opacity: 1; }
+            40% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+            85% { transform: translate(-50%, -60%) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -80%) scale(0.95) rotate(0deg); opacity: 0; }
+        }
+
+        /* XP gain pop */
+        .xp-pop {
+            position: fixed; bottom: 30%; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26,20,16,0.92);
+            color: var(--gold);
+            padding: 10px 18px; border-radius: 99px;
+            font-size: 15px; font-weight: 800;
+            z-index: 150; pointer-events: none;
+            animation: xpPopAnim 1.4s ease forwards;
+        }
+        @keyframes xpPopAnim {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            85% { opacity: 1; transform: translateX(-50%) translateY(-30px); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-50px); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="homeScreen" class="screen active">
+    <div class="inner">
+        <div class="home-header">
+            <div class="crest">⛪</div>
+            <h1>Bauhütte</h1>
+            <div class="home-subtitle">Kirchenbau im Mittelalter</div>
+            <div class="home-tagline">Romanik · Gotik</div>
+        </div>
+
+        <div class="stats-strip">
+            <div class="stat-pill">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-content">
+                    <div class="stat-label">XP</div>
+                    <div class="stat-value" id="xpValue">0</div>
+                    <div class="xp-bar-wrap"><div class="xp-bar-fill" id="xpBarFill" style="width:0%"></div></div>
+                </div>
+            </div>
+            <div class="stat-pill">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-content">
+                    <div class="stat-label">Streak</div>
+                    <div class="stat-value"><span id="streakValue">0</span> <small style="font-size:11px; font-weight:600; opacity:0.6;">Tage</small></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-label">Wähle einen Stil</div>
+        <div class="bereich-row" id="bereichRow"></div>
+
+        <div class="home-footer">
+            Alle Module sind frei spielbar – keine Reihenfolge.<br>
+            <span class="reset-link" onclick="resetProgress()">Fortschritt zurücksetzen</span>
+        </div>
+    </div>
+</div>
+
+<!-- QUIZ -->
+<div id="quizScreen" class="screen">
+    <div class="inner">
+        <div class="quiz-top">
+            <button class="quiz-back" onclick="goHome()">← Zurück</button>
+            <span class="quiz-progress-text"><span id="qNow">1</span> / <span id="qTotal">10</span></span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+        <div class="quiz-card">
+            <div id="quizCardContent"></div>
+        </div>
+    </div>
+</div>
+
+<!-- END -->
+<div id="endScreen" class="screen">
+    <div class="inner">
+        <div class="end-card">
+            <div class="end-emoji" id="endEmoji">🏆</div>
+            <div class="end-title" id="endTitle">Geschafft!</div>
+            <div class="end-subtitle" id="endSubtitle">Du hast die Runde abgeschlossen.</div>
+            <div class="end-stats">
+                <div class="end-stat">
+                    <div class="end-stat-value" id="endScore">0/0</div>
+                    <div class="end-stat-label">Richtig</div>
+                </div>
+                <div class="end-stat">
+                    <div class="end-stat-value" id="endXp">+0</div>
+                    <div class="end-stat-label">XP</div>
+                </div>
+                <div class="end-stat">
+                    <div class="end-stat-value" id="endBest">–</div>
+                    <div class="end-stat-label">Beste %</div>
+                </div>
+            </div>
+            <div class="end-actions">
+                <button class="btn-primary" onclick="retryRound()">↻ Nochmal</button>
+                <button class="btn-secondary" onclick="goHome()">Zurück zur Übersicht</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="confetti-wrap" id="confettiWrap"></div>
+
+<script>
+/* =====================================================
+   SVG LIBRARY – inline, no external dependencies
+   ===================================================== */
+const SVGS = {
+    rundbogen: `<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 15 75 L 15 40 A 35 35 0 0 1 85 40 L 85 75 Z" fill="#d6a979" stroke="#6b3a14" stroke-width="2.5"/>
+        <rect x="15" y="73" width="70" height="5" fill="#6b3a14"/>
+    </svg>`,
+    spitzbogen: `<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 15 75 L 15 40 Q 15 15 50 5 Q 85 15 85 40 L 85 75 Z" fill="#a8b8d8" stroke="#1f3666" stroke-width="2.5"/>
+        <rect x="15" y="73" width="70" height="5" fill="#1f3666"/>
+    </svg>`,
+    hufeisenbogen: `<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 20 75 L 20 50 A 30 32 0 0 1 80 50 L 80 75 Z M 25 75 L 25 52 A 25 27 0 0 1 75 52 L 75 75 Z" fill="#e6d29c" stroke="#7a6020" stroke-width="2"/>
+        <rect x="15" y="73" width="70" height="5" fill="#7a6020"/>
+    </svg>`,
+    korbbogen: `<svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 15 75 L 15 50 Q 15 35 35 32 Q 50 28 65 32 Q 85 35 85 50 L 85 75 Z" fill="#c9c5b8" stroke="#4a4636" stroke-width="2.5"/>
+        <rect x="15" y="73" width="70" height="5" fill="#4a4636"/>
+    </svg>`,
+    grundriss: `<svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Apsis -->
+        <path d="M 12 50 A 15 15 0 0 0 12 70 Z" fill="#f4e3d0" stroke="#6b3a14" stroke-width="1.5"/>
+        <!-- Chor -->
+        <rect x="12" y="50" width="22" height="20" fill="#f4e3d0" stroke="#6b3a14" stroke-width="1.5"/>
+        <!-- Vierung -->
+        <rect x="34" y="50" width="20" height="20" fill="#d6a979" stroke="#6b3a14" stroke-width="2"/>
+        <!-- Querhaus -->
+        <rect x="34" y="30" width="20" height="20" fill="#f4e3d0" stroke="#6b3a14" stroke-width="1.5"/>
+        <rect x="34" y="70" width="20" height="20" fill="#f4e3d0" stroke="#6b3a14" stroke-width="1.5"/>
+        <!-- Mittelschiff -->
+        <rect x="54" y="50" width="130" height="20" fill="#f4e3d0" stroke="#6b3a14" stroke-width="1.5"/>
+        <!-- Seitenschiffe -->
+        <rect x="54" y="40" width="130" height="10" fill="#fbf3e8" stroke="#6b3a14" stroke-width="1"/>
+        <rect x="54" y="70" width="130" height="10" fill="#fbf3e8" stroke="#6b3a14" stroke-width="1"/>
+        <!-- Joche -->
+        <line x1="86" y1="40" x2="86" y2="80" stroke="#6b3a14" stroke-width="0.7" stroke-dasharray="2,2"/>
+        <line x1="118" y1="40" x2="118" y2="80" stroke="#6b3a14" stroke-width="0.7" stroke-dasharray="2,2"/>
+        <line x1="150" y1="40" x2="150" y2="80" stroke="#6b3a14" stroke-width="0.7" stroke-dasharray="2,2"/>
+    </svg>`,
+    saeule: `<svg viewBox="0 0 60 130" xmlns="http://www.w3.org/2000/svg">
+        <!-- Kapitell -->
+        <rect x="10" y="15" width="40" height="20" fill="#d6a979" stroke="#6b3a14" stroke-width="2"/>
+        <rect x="6" y="32" width="48" height="6" fill="#b8662f" stroke="#6b3a14" stroke-width="1.5"/>
+        <!-- Schaft -->
+        <rect x="20" y="38" width="20" height="72" fill="#e6d29c" stroke="#6b3a14" stroke-width="1.5"/>
+        <!-- Basis -->
+        <rect x="14" y="110" width="32" height="8" fill="#b8662f" stroke="#6b3a14" stroke-width="1.5"/>
+        <rect x="10" y="118" width="40" height="8" fill="#d6a979" stroke="#6b3a14" stroke-width="2"/>
+    </svg>`,
+    wuerfelkapitell: `<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 10 40 L 10 60 L 70 60 L 70 40 L 10 40 Z" fill="#d6a979" stroke="#6b3a14" stroke-width="2"/>
+        <path d="M 10 40 Q 10 20 25 20 L 55 20 Q 70 20 70 40" fill="#e6d29c" stroke="#6b3a14" stroke-width="2"/>
+        <rect x="6" y="60" width="68" height="6" fill="#b8662f" stroke="#6b3a14" stroke-width="1.5"/>
+        <rect x="32" y="66" width="16" height="14" fill="#e6d29c" stroke="#6b3a14" stroke-width="1.5"/>
+    </svg>`,
+    halbtonne: `<svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 20 70 L 20 40 A 40 40 0 0 1 100 40 L 100 70" fill="none" stroke="#6b3a14" stroke-width="2.5"/>
+        <path d="M 20 70 Q 60 50 100 70" fill="#f4e3d0" stroke="#6b3a14" stroke-width="1.5"/>
+        <ellipse cx="60" cy="40" rx="40" ry="6" fill="#e6d29c" stroke="#6b3a14" stroke-width="1.5"/>
+        <path d="M 20 40 L 20 70" stroke="#6b3a14" stroke-width="2"/>
+        <path d="M 100 40 L 100 70" stroke="#6b3a14" stroke-width="2"/>
+    </svg>`,
+    kreuzgewoelbe: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 20 90 L 20 50 A 40 40 0 0 1 100 50 L 100 90 Z" fill="#f4e3d0" stroke="#6b3a14" stroke-width="2"/>
+        <path d="M 20 50 L 100 50" stroke="#6b3a14" stroke-width="1.5"/>
+        <path d="M 20 90 L 60 50 L 100 90" stroke="#6b3a14" stroke-width="2" fill="none"/>
+        <path d="M 20 50 Q 60 65 100 50" stroke="#6b3a14" stroke-width="1.2" fill="none" stroke-dasharray="2,2"/>
+    </svg>`,
+    kreuzrippengewoelbe: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 20 90 L 20 50 Q 20 25 60 15 Q 100 25 100 50 L 100 90 Z" fill="#d8e1f3" stroke="#1f3666" stroke-width="2"/>
+        <path d="M 20 90 L 60 35 L 100 90" stroke="#1f3666" stroke-width="3" fill="none"/>
+        <path d="M 60 15 L 60 90" stroke="#1f3666" stroke-width="2.5"/>
+        <circle cx="60" cy="35" r="4" fill="#1f3666"/>
+        <path d="M 20 50 Q 60 60 100 50" stroke="#1f3666" stroke-width="1.2" fill="none" stroke-dasharray="2,2"/>
+    </svg>`,
+    strebewerk: `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg">
+        <!-- Mittelschiff hoch -->
+        <rect x="70" y="20" width="40" height="90" fill="#d8e1f3" stroke="#1f3666" stroke-width="2"/>
+        <path d="M 70 20 Q 90 8 110 20" fill="#a8b8d8" stroke="#1f3666" stroke-width="2"/>
+        <!-- Seitenschiff -->
+        <rect x="40" y="60" width="30" height="50" fill="#d8e1f3" stroke="#1f3666" stroke-width="2"/>
+        <rect x="110" y="60" width="30" height="50" fill="#d8e1f3" stroke="#1f3666" stroke-width="2"/>
+        <!-- Strebepfeiler -->
+        <rect x="20" y="50" width="18" height="60" fill="#5a7ab8" stroke="#1f3666" stroke-width="2"/>
+        <rect x="142" y="50" width="18" height="60" fill="#5a7ab8" stroke="#1f3666" stroke-width="2"/>
+        <!-- Strebebögen -->
+        <path d="M 30 55 Q 50 30 70 35" fill="none" stroke="#5a7ab8" stroke-width="6" stroke-linecap="round"/>
+        <path d="M 130 55 Q 110 30 90 35" fill="none" stroke="#5a7ab8" stroke-width="6" stroke-linecap="round"/>
+        <!-- Boden -->
+        <rect x="0" y="110" width="160" height="6" fill="#1f3666"/>
+    </svg>`,
+    massiv: `<svg viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Dicke Mauern -->
+        <rect x="10" y="20" width="30" height="80" fill="#b8662f" stroke="#6b3a14" stroke-width="2"/>
+        <rect x="120" y="20" width="30" height="80" fill="#b8662f" stroke="#6b3a14" stroke-width="2"/>
+        <!-- Tonnengewölbe darüber -->
+        <path d="M 40 20 A 40 30 0 0 1 120 20" fill="#d6a979" stroke="#6b3a14" stroke-width="2"/>
+        <!-- Kleine Fenster -->
+        <rect x="18" y="45" width="14" height="20" fill="#3a3025" stroke="#6b3a14" stroke-width="1.5"/>
+        <rect x="128" y="45" width="14" height="20" fill="#3a3025" stroke="#6b3a14" stroke-width="1.5"/>
+        <!-- Lastpfeile -->
+        <path d="M 80 30 L 75 50 L 78 50 L 78 60 L 82 60 L 82 50 L 85 50 Z" fill="#6b3a14"/>
+        <path d="M 25 65 L 20 75 L 22 75 L 22 80 L 28 80 L 28 75 L 30 75 Z" fill="#6b3a14"/>
+        <path d="M 135 65 L 130 75 L 132 75 L 132 80 L 138 80 L 138 75 L 140 75 Z" fill="#6b3a14"/>
+    </svg>`,
+    dreipass: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="44" fill="none" stroke="#1f3666" stroke-width="2"/>
+        <circle cx="50" cy="32" r="14" fill="none" stroke="#1f3666" stroke-width="2.5"/>
+        <circle cx="34" cy="60" r="14" fill="none" stroke="#1f3666" stroke-width="2.5"/>
+        <circle cx="66" cy="60" r="14" fill="none" stroke="#1f3666" stroke-width="2.5"/>
+    </svg>`,
+    dreiblatt: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 50 12 L 70 32 L 90 50 L 70 68 L 50 88 L 30 68 L 10 50 L 30 32 Z" fill="none" stroke="#1f3666" stroke-width="2.5"/>
+        <circle cx="50" cy="28" r="13" fill="#d8e1f3" stroke="#1f3666" stroke-width="2"/>
+        <circle cx="32" cy="60" r="13" fill="#d8e1f3" stroke="#1f3666" stroke-width="2"/>
+        <circle cx="68" cy="60" r="13" fill="#d8e1f3" stroke="#1f3666" stroke-width="2"/>
+    </svg>`,
+    fischblase: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="44" fill="none" stroke="#1f3666" stroke-width="2"/>
+        <path d="M 30 25 Q 70 25 70 50 Q 70 75 40 80 Q 25 75 30 60 Q 35 50 50 50 Q 60 50 60 40 Q 60 30 40 30 Q 30 30 30 25 Z" fill="none" stroke="#1f3666" stroke-width="2.5"/>
+    </svg>`,
+    dreischenkel: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="44" fill="none" stroke="#1f3666" stroke-width="2"/>
+        <path d="M 50 14 Q 60 30 70 40 Q 80 50 70 60 Q 60 70 50 78 Q 40 70 30 60 Q 20 50 30 40 Q 40 30 50 14 Z" fill="none" stroke="#1f3666" stroke-width="2.5"/>
+        <path d="M 50 50 L 50 14" stroke="#1f3666" stroke-width="2"/>
+        <path d="M 50 50 L 18 68" stroke="#1f3666" stroke-width="2"/>
+        <path d="M 50 50 L 82 68" stroke="#1f3666" stroke-width="2"/>
+    </svg>`,
+    rose: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="44" fill="#d8e1f3" stroke="#1f3666" stroke-width="2.5"/>
+        <circle cx="50" cy="50" r="14" fill="#a8b8d8" stroke="#1f3666" stroke-width="2"/>
+        <g stroke="#1f3666" stroke-width="1.5" fill="none">
+            <circle cx="50" cy="22" r="8"/>
+            <circle cx="74" cy="36" r="8"/>
+            <circle cx="78" cy="60" r="8"/>
+            <circle cx="60" cy="78" r="8"/>
+            <circle cx="40" cy="78" r="8"/>
+            <circle cx="22" cy="60" r="8"/>
+            <circle cx="26" cy="36" r="8"/>
+        </g>
+        <g stroke="#1f3666" stroke-width="1" fill="none">
+            <line x1="50" y1="50" x2="50" y2="22"/>
+            <line x1="50" y1="50" x2="74" y2="36"/>
+            <line x1="50" y1="50" x2="78" y2="60"/>
+            <line x1="50" y1="50" x2="60" y2="78"/>
+            <line x1="50" y1="50" x2="40" y2="78"/>
+            <line x1="50" y1="50" x2="22" y2="60"/>
+            <line x1="50" y1="50" x2="26" y2="36"/>
+        </g>
+    </svg>`,
+    pfeiler: `<svg viewBox="0 0 60 130" xmlns="http://www.w3.org/2000/svg">
+        <rect x="15" y="15" width="30" height="100" fill="#a8a8a8" stroke="#444" stroke-width="2"/>
+        <rect x="10" y="115" width="40" height="10" fill="#888" stroke="#444" stroke-width="2"/>
+        <rect x="10" y="10" width="40" height="8" fill="#888" stroke="#444" stroke-width="2"/>
+    </svg>`,
+    buendelpfeiler: `<svg viewBox="0 0 60 130" xmlns="http://www.w3.org/2000/svg">
+        <rect x="22" y="15" width="16" height="100" fill="#a8b8d8" stroke="#1f3666" stroke-width="2"/>
+        <rect x="13" y="20" width="9" height="95" fill="#a8b8d8" stroke="#1f3666" stroke-width="2"/>
+        <rect x="38" y="20" width="9" height="95" fill="#a8b8d8" stroke="#1f3666" stroke-width="2"/>
+        <rect x="6" y="25" width="7" height="90" fill="#a8b8d8" stroke="#1f3666" stroke-width="2"/>
+        <rect x="47" y="25" width="7" height="90" fill="#a8b8d8" stroke="#1f3666" stroke-width="2"/>
+        <rect x="3" y="115" width="54" height="10" fill="#5a7ab8" stroke="#1f3666" stroke-width="2"/>
+    </svg>`
+};
+
+/* =====================================================
+   QUESTION CATALOG
+   bereich: 'romanik' | 'gotik'
+   thema: 'aussenbau' | 'grundriss' | 'konstruktion' | 'kontext' | 'masswerk'
+   typ: 'mc' | 'bild' | 'wf' | 'stil' | 'beschriften' | 'luecke'
+   ===================================================== */
+const QUESTIONS = [
+    /* ============ ROMANIK – Außenbau ============ */
+    {
+        id: 'r-a-01', bereich: 'romanik', thema: 'aussenbau', typ: 'bild',
+        frage: 'Welcher Bogen ist typisch für die Romanik?',
+        optionen: [
+            { svg: 'rundbogen', label: 'Rundbogen' },
+            { svg: 'spitzbogen', label: 'Spitzbogen' },
+            { svg: 'hufeisenbogen', label: 'Hufeisenbogen' },
+            { svg: 'korbbogen', label: 'Korbbogen' }
+        ],
+        korrekt: 0,
+        erklaerung: 'Der halbkreisförmige Rundbogen ist DAS Erkennungsmerkmal der Romanik. Erst in der Gotik wird er vom Spitzbogen abgelöst.'
+    },
+    {
+        id: 'r-a-02', bereich: 'romanik', thema: 'aussenbau', typ: 'mc',
+        frage: 'Wann begann die Epoche der Romanik?',
+        optionen: ['Um 950', 'Um 1250', 'Um 1400', 'Um 1500'],
+        korrekt: 0,
+        erklaerung: 'Die Romanik dauert von etwa 950 bis 1250. Danach beginnt die Gotik.'
+    },
+    {
+        id: 'r-a-03', bereich: 'romanik', thema: 'aussenbau', typ: 'mc',
+        frage: 'Wie wirken romanische Kirchen von außen?',
+        optionen: ['Blockhaft und burgähnlich', 'Filigran und durchbrochen', 'Verspielt und verziert', 'Rund und kuppelförmig'],
+        korrekt: 0,
+        erklaerung: 'Romanische Kirchen wirken wie Festungen – blockhaft, mit dicken Mauern und kleinen Fenstern. Daher der Beiname „Burg Gottes".'
+    },
+    {
+        id: 'r-a-04', bereich: 'romanik', thema: 'aussenbau', typ: 'wf',
+        frage: 'Romanische Kirchen haben große, farbige Fenster.',
+        korrekt: false,
+        erklaerung: 'Falsch! In der Romanik sind die Fenster KLEIN, weil die dicken Mauern die ganze Last tragen müssen. Große farbige Fenster sind ein Kennzeichen der Gotik.'
+    },
+    {
+        id: 'r-a-05', bereich: 'romanik', thema: 'aussenbau', typ: 'stil',
+        frage: 'Was passt zur Romanik?',
+        hintText: 'Geschlossene Wandflächen, einfache geometrische Körper, „Burg Gottes"',
+        korrekt: 'romanik',
+        erklaerung: 'Genau – geschlossene Wände, blockhafte Formen und der „Burg Gottes"-Charakter sind klassisch romanisch.'
+    },
+    {
+        id: 'r-a-06', bereich: 'romanik', thema: 'aussenbau', typ: 'luecke',
+        frage: 'In der Romanik wird die ___ Richtung der Kirche betont – etwa durch Schmuckfriese.',
+        optionen: ['horizontale', 'vertikale', 'diagonale', 'spirale'],
+        korrekt: 0,
+        erklaerung: 'Romanische Bauten betonen die horizontale Richtung – das macht sie ruhig und erdverbunden. Die Gotik zieht dagegen senkrecht nach oben.'
+    },
+
+    /* ============ ROMANIK – Grundriss & Innenraum ============ */
+    {
+        id: 'r-g-01', bereich: 'romanik', thema: 'grundriss', typ: 'mc',
+        frage: 'Welcher Form gleicht der Grundriss einer romanischen Kirche?',
+        hintSvg: 'grundriss',
+        optionen: ['Einem Kreuz', 'Einem Kreis', 'Einem Rechteck', 'Einem Stern'],
+        korrekt: 0,
+        erklaerung: 'Der Grundriss bildet ein lateinisches Kreuz: Langhaus = senkrechter Balken, Querhaus = waagerechter Balken.'
+    },
+    {
+        id: 'r-g-02', bereich: 'romanik', thema: 'grundriss', typ: 'mc',
+        frage: 'Was ist die Apsis?',
+        optionen: ['Die halbrunde Nische am Chor', 'Der Glockenturm', 'Das Hauptportal', 'Der Innenhof'],
+        korrekt: 0,
+        erklaerung: 'Die Apsis ist die halbrunde (manchmal eckige) Nische, die den Chor nach Osten abschließt – traditionell Richtung aufgehender Sonne / Jerusalem.'
+    },
+    {
+        id: 'r-g-03', bereich: 'romanik', thema: 'grundriss', typ: 'luecke',
+        frage: 'Das Rechteck, in dem sich Lang- und Querhaus überschneiden, heißt ___.',
+        optionen: ['Vierung', 'Apsis', 'Joch', 'Chor'],
+        korrekt: 0,
+        erklaerung: 'Die Vierung ist das zentrale Quadrat im Schnittpunkt – sie ist gleichzeitig das „Joch", die Maßeinheit des Baus.'
+    },
+    {
+        id: 'r-g-04', bereich: 'romanik', thema: 'grundriss', typ: 'mc',
+        frage: 'Was bedeutet „Ostung"?',
+        optionen: [
+            'Ausrichtung der Kirche nach Osten (Jerusalem)',
+            'Östliche Bauart aus Byzanz',
+            'Der östliche Seitenflügel',
+            'Eine Form des Apsisbogens'
+        ],
+        korrekt: 0,
+        erklaerung: 'Ostung = die Kirche wird nach Osten ausgerichtet, also Richtung aufgehender Sonne und Jerusalem.'
+    },
+    {
+        id: 'r-g-05', bereich: 'romanik', thema: 'grundriss', typ: 'mc',
+        frage: 'Welche drei Bauteile bilden zusammen das Langhaus?',
+        optionen: [
+            'Mittelschiff und zwei Seitenschiffe',
+            'Chor, Apsis und Querhaus',
+            'Vierung, Chor und Apsis',
+            'Drei Apsiden hintereinander'
+        ],
+        korrekt: 0,
+        erklaerung: 'Das Langhaus besteht aus dem hohen Mittelschiff und zwei (halb so breiten) Seitenschiffen.'
+    },
+    {
+        id: 'r-g-06', bereich: 'romanik', thema: 'grundriss', typ: 'bild',
+        frage: 'Welches Kapitell ist typisch romanisch?',
+        optionen: [
+            { svg: 'wuerfelkapitell', label: 'Würfelkapitell' },
+            { svg: 'pfeiler', label: 'Schlichter Pfeiler' },
+            { svg: 'buendelpfeiler', label: 'Bündelpfeiler' },
+            { svg: 'saeule', label: 'Korinthisches Kapitell' }
+        ],
+        korrekt: 0,
+        erklaerung: 'Das Würfelkapitell – ein Würfel mit abgerundeten Unterseiten – ist die typische romanische Kapitellform.'
+    },
+    {
+        id: 'r-g-07', bereich: 'romanik', thema: 'grundriss', typ: 'mc',
+        frage: 'Aus welchen drei Teilen besteht eine Säule?',
+        hintSvg: 'saeule',
+        optionen: [
+            'Kapitell, Schaft und Basis',
+            'Kopf, Hals und Fuß',
+            'Sockel, Bogen und Spitze',
+            'Pfeiler, Pfosten und Platte'
+        ],
+        korrekt: 0,
+        erklaerung: 'Wie schon in der Antike: oben das Kapitell (Kopf), in der Mitte der Schaft, unten die Basis.'
+    },
+    {
+        id: 'r-g-08', bereich: 'romanik', thema: 'grundriss', typ: 'mc',
+        frage: 'Was bedeutet „Stützenwechsel"?',
+        optionen: [
+            'Pfeiler und Säulen wechseln sich als Stützen ab',
+            'Die Säulen werden während des Baus ausgetauscht',
+            'Die Stützen wechseln die Farbe',
+            'Mauern werden durch Säulen ersetzt'
+        ],
+        korrekt: 0,
+        erklaerung: 'Typisch romanisch: stärkere Pfeiler an den Ecken der Mittelschiff-Joche, dazwischen schlankere Säulen.'
+    },
+
+    /* ============ ROMANIK – Konstruktion ============ */
+    {
+        id: 'r-k-01', bereich: 'romanik', thema: 'konstruktion', typ: 'mc',
+        frage: 'Was ist Massivbauweise?',
+        hintSvg: 'massiv',
+        optionen: [
+            'Die Mauern tragen die ganze Last',
+            'Ein Strebewerk außen trägt die Last',
+            'Eiserne Stützen tragen das Dach',
+            'Holzbalken tragen die Last'
+        ],
+        korrekt: 0,
+        erklaerung: 'In der Romanik ruht die gesamte Last des Dachs und der Gewölbe auf den dicken Außenmauern – deshalb auch die kleinen Fenster.'
+    },
+    {
+        id: 'r-k-02', bereich: 'romanik', thema: 'konstruktion', typ: 'bild',
+        frage: 'Welche Deckenform ist typisch für die FRÜHE Romanik?',
+        optionen: [
+            { svg: 'halbtonne', label: 'Halbtonnen-gewölbe' },
+            { svg: 'kreuzgewoelbe', label: 'Kreuz-gewölbe' },
+            { svg: 'kreuzrippengewoelbe', label: 'Kreuzrippen-gewölbe' },
+            { svg: 'strebewerk', label: 'Strebewerk' }
+        ],
+        korrekt: 0,
+        erklaerung: 'Anfangs flache Holzdecken, dann das Halbtonnengewölbe. Das Kreuzrippengewölbe gehört zur Gotik.'
+    },
+    {
+        id: 'r-k-03', bereich: 'romanik', thema: 'konstruktion', typ: 'wf',
+        frage: 'Ein Kreuzgewölbe entsteht durch die Überschneidung von zwei Halbtonnengewölben.',
+        korrekt: true,
+        erklaerung: 'Richtig! Zwei sich rechtwinklig kreuzende Halbtonnen ergeben das Kreuzgewölbe – häufig in romanischen Seitenschiffen.'
+    },
+    {
+        id: 'r-k-04', bereich: 'romanik', thema: 'konstruktion', typ: 'luecke',
+        frage: 'Beim Rundbogen liegt der Druck ganz auf der ___.',
+        optionen: ['Wand bzw. Stütze', 'Decke', 'Apsis', 'Vierung'],
+        korrekt: 0,
+        erklaerung: 'Der Rundbogen leitet seine Last senkrecht nach unten auf die Wand oder Säule – darum müssen die Mauern dick sein.'
+    },
+
+    /* ============ ROMANIK – Zeit & Kontext ============ */
+    {
+        id: 'r-z-01', bereich: 'romanik', thema: 'kontext', typ: 'mc',
+        frage: 'Welche Kaiserdynastie prägte die frühe Romanik im Heiligen Römischen Reich?',
+        optionen: ['Die Ottonen', 'Die Habsburger', 'Die Hohenzollern', 'Die Bourbonen'],
+        korrekt: 0,
+        erklaerung: 'Otto I. wurde 962 Kaiser. Die Ottonen, später Salier und Staufer prägten die Romanik. Kaiser und Kirche waren eng verbunden („Reichskirchensystem").'
+    },
+    {
+        id: 'r-z-02', bereich: 'romanik', thema: 'kontext', typ: 'mc',
+        frage: 'Welches Kloster wurde im Mittelalter zum wichtigsten Reformzentrum?',
+        optionen: ['Cluny in Burgund', 'Sankt Gallen', 'Monte Cassino', 'Citeaux'],
+        korrekt: 0,
+        erklaerung: 'Cluny (gegründet 910) wurde zum geistigen Zentrum der Romanik: Bildung, Schreibstuben, Spiritualität und neue Klosterregeln strahlten von hier aus.'
+    },
+    {
+        id: 'r-z-03', bereich: 'romanik', thema: 'kontext', typ: 'mc',
+        frage: 'Was ist der Jakobsweg?',
+        optionen: [
+            'Ein Pilgerweg nach Santiago de Compostela',
+            'Die Handelsroute nach Indien',
+            'Ein Höhenzug in den Alpen',
+            'Die alte Römerstraße in Spanien'
+        ],
+        korrekt: 0,
+        erklaerung: 'Der Jakobsweg führt zum Grab des Apostels Jakobus in Santiago de Compostela – einer der wichtigsten Pilgerwege im Mittelalter, gesäumt von romanischen Kirchen.'
+    },
+    {
+        id: 'r-z-04', bereich: 'romanik', thema: 'kontext', typ: 'mc',
+        frage: 'Wann begann der erste Kreuzzug?',
+        optionen: ['1096', '950', '1250', '1492'],
+        korrekt: 0,
+        erklaerung: 'Der erste Kreuzzug begann 1096. Die Kreuzzüge brachten Kontakt zu östlichen Kulturen und neuen Bauideen.'
+    },
+    {
+        id: 'r-z-05', bereich: 'romanik', thema: 'kontext', typ: 'mc',
+        frage: 'Wer waren im Mittelalter die wichtigsten Auftraggeber für romanische Kirchen?',
+        optionen: [
+            'Klöster, Bischöfe und Kaiser',
+            'Reiche Kaufleute der Städte',
+            'Die Zünfte der Handwerker',
+            'Die Stadtbürger gemeinsam'
+        ],
+        korrekt: 0,
+        erklaerung: 'In der Romanik gab es noch wenig Städte. Auftraggeber waren Klöster, Bischöfe und der Kaiser – erst in der Gotik werden die wohlhabenden Stadtbürger zu Bauherren.'
+    },
+    {
+        id: 'r-z-06', bereich: 'romanik', thema: 'kontext', typ: 'mc',
+        frage: 'Welche romanische Kirche kennst du aus dem Unterricht?',
+        optionen: [
+            'St. Michael in Hildesheim',
+            'Notre-Dame in Paris',
+            'Kölner Dom',
+            'Kathedrale Chartres'
+        ],
+        korrekt: 0,
+        erklaerung: 'St. Michael in Hildesheim, ab 1010 erbaut, ist eine der wichtigsten ottonisch-romanischen Kirchen. Die anderen drei sind gotisch.'
+    },
+    {
+        id: 'r-z-07', bereich: 'romanik', thema: 'kontext', typ: 'wf',
+        frage: 'St. Michael in Hildesheim wurde ab dem Jahr 1010 erbaut.',
+        korrekt: true,
+        erklaerung: 'Richtig! Bauherr war Bischof Bernward, ein bedeutender ottonischer Kunstförderer.'
+    },
+
+    /* ============ GOTIK – Außenbau ============ */
+    {
+        id: 'g-a-01', bereich: 'gotik', thema: 'aussenbau', typ: 'bild',
+        frage: 'Welcher Bogen ist typisch für die Gotik?',
+        optionen: [
+            { svg: 'spitzbogen', label: 'Spitzbogen' },
+            { svg: 'rundbogen', label: 'Rundbogen' },
+            { svg: 'hufeisenbogen', label: 'Hufeisenbogen' },
+            { svg: 'korbbogen', label: 'Korbbogen' }
+        ],
+        korrekt: 0,
+        erklaerung: 'Der Spitzbogen leitet die Last senkrechter nach unten – das macht höhere Bauten und größere Fenster möglich.'
+    },
+    {
+        id: 'g-a-02', bereich: 'gotik', thema: 'aussenbau', typ: 'mc',
+        frage: 'Wann beginnt die Gotik?',
+        optionen: ['Um 1250', 'Um 950', 'Um 1500', 'Um 800'],
+        korrekt: 0,
+        erklaerung: 'Die Gotik dauert von ca. 1250 bis 1400 – sie löst die Romanik ab.'
+    },
+    {
+        id: 'g-a-03', bereich: 'gotik', thema: 'aussenbau', typ: 'mc',
+        frage: 'Von welchem Land aus verbreitete sich die Gotik?',
+        optionen: ['Frankreich', 'Italien', 'Deutschland', 'England'],
+        korrekt: 0,
+        erklaerung: 'Die Gotik entstand in Nordfrankreich (z.B. Saint-Denis bei Paris) und verbreitete sich von dort über Europa. In Italien blieb sie selten.'
+    },
+    {
+        id: 'g-a-04', bereich: 'gotik', thema: 'aussenbau', typ: 'wf',
+        frage: 'In Italien gibt es kaum gotische Bauwerke.',
+        korrekt: true,
+        erklaerung: 'Richtig! Italien hielt stärker an antiken Vorbildern fest. Die Gotik prägte vor allem Frankreich, Deutschland, England und Spanien.'
+    },
+    {
+        id: 'g-a-05', bereich: 'gotik', thema: 'aussenbau', typ: 'mc',
+        frage: 'Welches Bild beschreibt die gotische Kathedrale am besten?',
+        optionen: ['Himmlische Stadt', 'Burg Gottes', 'Heiliger Hain', 'Tempel der Sonne'],
+        korrekt: 0,
+        erklaerung: 'Die Gotik will eine „himmlische Stadt" auf Erden schaffen – himmelstrebend, lichtdurchflutet, in den Städten emporragend.'
+    },
+    {
+        id: 'g-a-06', bereich: 'gotik', thema: 'aussenbau', typ: 'mc',
+        frage: 'Was ist ein Wasserspeier?',
+        optionen: [
+            'Plastischer Schmuck, der Regenwasser ableitet',
+            'Ein Brunnen vor dem Hauptportal',
+            'Der Innenhof mit Springbrunnen',
+            'Ein Becken für das Weihwasser'
+        ],
+        korrekt: 0,
+        erklaerung: 'Wasserspeier sind oft als groteske Tier- oder Fabelfiguren gestaltete Bauelemente, die Regenwasser von der Fassade wegspeien.'
+    },
+    {
+        id: 'g-a-07', bereich: 'gotik', thema: 'aussenbau', typ: 'stil',
+        frage: 'Was passt zur Gotik?',
+        hintText: 'Spitzbögen, geöffnete Wandflächen, „alles strebt Richtung Gott"',
+        korrekt: 'gotik',
+        erklaerung: 'Genau – himmelstrebende, durchbrochene und feingliedrige Bauten sind klassisch gotisch.'
+    },
+
+    /* ============ GOTIK – Grundriss/Innenraum ============ */
+    {
+        id: 'g-g-01', bereich: 'gotik', thema: 'grundriss', typ: 'bild',
+        frage: 'Welche Pfeilerform ist typisch gotisch?',
+        optionen: [
+            { svg: 'buendelpfeiler', label: 'Bündelpfeiler' },
+            { svg: 'pfeiler', label: 'Schlichter Pfeiler' },
+            { svg: 'wuerfelkapitell', label: 'Würfelkapitell' },
+            { svg: 'saeule', label: 'Antike Säule' }
+        ],
+        korrekt: 0,
+        erklaerung: 'Der Bündelpfeiler sieht aus, als wären viele schlanke Säulen gebündelt. Er führt die Gewölberippen nahtlos bis zum Boden weiter.'
+    },
+    {
+        id: 'g-g-02', bereich: 'gotik', thema: 'grundriss', typ: 'bild',
+        frage: 'Welches Gewölbe ist typisch gotisch?',
+        optionen: [
+            { svg: 'kreuzrippengewoelbe', label: 'Kreuz-rippen-gewölbe' },
+            { svg: 'halbtonne', label: 'Halbtonnen-gewölbe' },
+            { svg: 'kreuzgewoelbe', label: 'Kreuz-gewölbe' },
+            { svg: 'strebewerk', label: 'Strebewerk' }
+        ],
+        korrekt: 0,
+        erklaerung: 'Das Kreuzrippengewölbe trägt mit seinen sichtbaren steinernen Rippen die Last. Es betont die senkrechte Linie und ist eines der wichtigsten gotischen Bauelemente.'
+    },
+    {
+        id: 'g-g-03', bereich: 'gotik', thema: 'grundriss', typ: 'mc',
+        frage: 'Was sind Maßwerkfenster?',
+        optionen: [
+            'Große Fenster, durch gemauerte Ornamente gegliedert',
+            'Kleine Fenster mit Maßeinheiten',
+            'Fenster mit eingebauten Messlatten',
+            'Fenster, die genau passend zugeschnitten werden'
+        ],
+        korrekt: 0,
+        erklaerung: 'Weil große Glasflächen damals technisch nicht machbar waren, gliederte man die riesigen gotischen Fensteröffnungen mit steinernem Maßwerk – konstruiert mit Maß und Zirkel.'
+    },
+    {
+        id: 'g-g-04', bereich: 'gotik', thema: 'grundriss', typ: 'luecke',
+        frage: 'Im Innenraum öffnen ___ den Blick zu den Seitenschiffen.',
+        optionen: ['Arkaden', 'Apsiden', 'Pfeiler', 'Joche'],
+        korrekt: 0,
+        erklaerung: 'Arkaden sind Bogenreihen auf Stützen. In der Romanik mit Rund-, in der Gotik mit Spitzbögen.'
+    },
+    {
+        id: 'g-g-05', bereich: 'gotik', thema: 'grundriss', typ: 'mc',
+        frage: 'Wodurch wirkt der Innenraum einer gotischen Kirche so lichtdurchflutet?',
+        optionen: [
+            'Durch große Maßwerkfenster und offene Arkaden',
+            'Durch kleine Lichtschächte im Dach',
+            'Durch weiß getünchte Wände',
+            'Durch eine Glaskuppel über der Vierung'
+        ],
+        korrekt: 0,
+        erklaerung: 'Die Skelettbauweise erlaubt es, fast die ganze Wand durch Glas zu ersetzen. Das farbige Licht durch Maßwerkfenster ist ein zentrales Erlebnis gotischer Kirchen.'
+    },
+
+    /* ============ GOTIK – Konstruktion ============ */
+    {
+        id: 'g-k-01', bereich: 'gotik', thema: 'konstruktion', typ: 'mc',
+        frage: 'Was ist Skelettbauweise?',
+        hintSvg: 'strebewerk',
+        optionen: [
+            'Ein Traggerüst aus Stein trägt die Last – nicht die Wand',
+            'Knochenförmige Verzierungen an den Säulen',
+            'Eiserne Streben im Mauerwerk',
+            'Skelette von Heiligen unter der Kirche'
+        ],
+        korrekt: 0,
+        erklaerung: 'In der Gotik ruht die Last des Gewölbes nicht mehr auf den Wänden, sondern wird über Bündelpfeiler und außen liegende Strebebögen auf Strebepfeiler abgeleitet.'
+    },
+    {
+        id: 'g-k-02', bereich: 'gotik', thema: 'konstruktion', typ: 'mc',
+        frage: 'Was machen Strebebögen?',
+        hintSvg: 'strebewerk',
+        optionen: [
+            'Sie leiten die Gewölbelast über die Seitenschiffe nach außen',
+            'Sie schmücken die Vorderseite der Kirche',
+            'Sie verbinden die Türme miteinander',
+            'Sie stützen die Glocken'
+        ],
+        korrekt: 0,
+        erklaerung: 'Strebebögen überspannen die Seitenschiffe und übertragen die Gewölbelast auf die außen stehenden Strebepfeiler – deshalb können die Wände so dünn sein.'
+    },
+    {
+        id: 'g-k-03', bereich: 'gotik', thema: 'konstruktion', typ: 'luecke',
+        frage: 'Die Strebebögen münden in ___, die zusätzlich abstützen.',
+        optionen: ['Strebepfeilern', 'Bündelpfeilern', 'Wasserspeiern', 'Maßwerkfenstern'],
+        korrekt: 0,
+        erklaerung: 'Strebebogen + Strebepfeiler bilden zusammen das „Strebewerk" – das Skelett der gotischen Kirche.'
+    },
+    {
+        id: 'g-k-04', bereich: 'gotik', thema: 'konstruktion', typ: 'wf',
+        frage: 'In der Gotik tragen die dicken Mauern die ganze Last.',
+        korrekt: false,
+        erklaerung: 'Falsch! Das ist die romanische Massivbauweise. In der Gotik trägt das Strebewerk – deshalb können die Wände aufgebrochen und durch Glas ersetzt werden.'
+    },
+    {
+        id: 'g-k-05', bereich: 'gotik', thema: 'konstruktion', typ: 'stil',
+        frage: 'Wo wird die Last des Gewölbes auf außen liegende Pfeiler abgeleitet?',
+        korrekt: 'gotik',
+        erklaerung: 'Skelettbauweise mit Strebewerk = Gotik. Die Romanik trägt die Last über dicke Wände (Massivbau).'
+    },
+
+    /* ============ GOTIK – Maßwerk ============ */
+    {
+        id: 'g-m-01', bereich: 'gotik', thema: 'masswerk', typ: 'bild',
+        frage: 'Welche Form ist ein Dreipass?',
+        optionen: [
+            { svg: 'dreipass', label: 'Dreipass' },
+            { svg: 'dreiblatt', label: 'Dreiblatt' },
+            { svg: 'fischblase', label: 'Fischblase' },
+            { svg: 'dreischenkel', label: 'Dreischenkel' }
+        ],
+        korrekt: 0,
+        erklaerung: 'Der Dreipass besteht aus drei gleichgroßen Kreissegmenten – ein Grundmuster des gotischen Maßwerks.'
+    },
+    {
+        id: 'g-m-02', bereich: 'gotik', thema: 'masswerk', typ: 'bild',
+        frage: 'Welche Form ist eine Fischblase?',
+        optionen: [
+            { svg: 'fischblase', label: 'Fischblase' },
+            { svg: 'dreipass', label: 'Dreipass' },
+            { svg: 'dreiblatt', label: 'Dreiblatt' },
+            { svg: 'dreischenkel', label: 'Dreischenkel' }
+        ],
+        korrekt: 0,
+        erklaerung: 'Die Fischblase ist eine geschwungene, S-förmige Maßwerksform – typisch für die Spätgotik.'
+    },
+    {
+        id: 'g-m-03', bereich: 'gotik', thema: 'masswerk', typ: 'mc',
+        frage: 'Mit welchen Werkzeugen wurde das Maßwerk konstruiert?',
+        optionen: ['Zirkel und Lineal', 'Hammer und Meißel', 'Pinsel und Farbe', 'Schablonen und Modellholz'],
+        korrekt: 0,
+        erklaerung: 'Die Muster ergaben sich durch Zirkelschläge an wechselnden Einstichpunkten – daher der Name „Maß-Werk".'
+    },
+    {
+        id: 'g-m-04', bereich: 'gotik', thema: 'masswerk', typ: 'mc',
+        frage: 'Was symbolisiert die Fensterrose?',
+        hintSvg: 'rose',
+        optionen: ['Die göttliche Vollkommenheit', 'Die vier Jahreszeiten', 'Die Sonne über Jerusalem', 'Die Stadt Bethlehem'],
+        korrekt: 0,
+        erklaerung: 'Die kreisrunde, regelmäßig unterteilte Fensterrose über dem Hauptportal steht für die göttliche Vollkommenheit – der Kreis hat weder Anfang noch Ende.'
+    },
+    {
+        id: 'g-m-05', bereich: 'gotik', thema: 'masswerk', typ: 'mc',
+        frage: 'Wo befindet sich die Fensterrose normalerweise?',
+        optionen: ['Über dem Hauptportal', 'In der Apsis', 'Unter dem Boden', 'Im Glockenturm'],
+        korrekt: 0,
+        erklaerung: 'Die große Rosette ist meist im westlichen Querhaus oder über dem Hauptportal zu finden – sie empfängt die Eintretenden mit farbigem Licht.'
+    },
+    {
+        id: 'g-m-06', bereich: 'gotik', thema: 'masswerk', typ: 'wf',
+        frage: 'Schon in der Romanik wurden einfache Radfenster verwendet.',
+        korrekt: true,
+        erklaerung: 'Richtig! Die Vorform der gotischen Fensterrose – das einfache Radfenster – kommt schon in der Romanik vor. In der Gotik wird sie viel komplexer gestaltet.'
+    },
+
+    /* ============ GOTIK – Zeit & Kontext ============ */
+    {
+        id: 'g-z-01', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Was machte die freien Städte im Spätmittelalter besonders?',
+        optionen: [
+            'Sie waren steuerfrei gegenüber dem Kaiser und verwalteten sich selbst',
+            'Sie hatten keine Stadtmauer',
+            'Sie waren alle gleich groß',
+            'Sie standen unter Befehl des Papstes'
+        ],
+        korrekt: 0,
+        erklaerung: 'Freie Reichsstädte gewannen großen Reichtum und Einfluss – diese Bürger werden zu wichtigen Auftraggebern für gotische Kirchen.'
+    },
+    {
+        id: 'g-z-02', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Was sind Zünfte?',
+        optionen: [
+            'Zusammenschlüsse von Kaufleuten und Handwerkern mit festen Regeln',
+            'Kirchliche Bruderschaften',
+            'Adelige Familienverbände',
+            'Söldnerheere der Städte'
+        ],
+        korrekt: 0,
+        erklaerung: 'Zünfte regelten Ausbildung, Qualität und Preise eines Handwerks – sie sind ein Kernmerkmal des städtischen Lebens im Spätmittelalter.'
+    },
+    {
+        id: 'g-z-03', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Was war eine Bauhütte?',
+        optionen: [
+            'Der Zusammenschluss aller Bauhandwerker auf der Kathedralbaustelle',
+            'Ein einfaches Wohnhaus aus Holz',
+            'Ein Lagerraum für Werkzeug',
+            'Die Wohnung des Bischofs'
+        ],
+        korrekt: 0,
+        erklaerung: 'Bauhütte = der reale Ort UND die Organisation, in der Baumeister, Steinmetze, Bildhauer und Glasmaler gemeinsam arbeiteten und ausbildeten.'
+    },
+    {
+        id: 'g-z-04', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Wie verbreiteten sich gotische Gestaltungsideen quer durch Europa?',
+        optionen: [
+            'Durch die Wanderschaft der Handwerker nach der Lehrzeit',
+            'Durch gedruckte Bücher',
+            'Durch reisende Kaufleute',
+            'Durch Brieftauben zwischen Klöstern'
+        ],
+        korrekt: 0,
+        erklaerung: 'Nach der Lehrzeit ging es auf Wanderschaft – so wanderten Wissen und Stilformen mit den Gesellen von Baustelle zu Baustelle.'
+    },
+    {
+        id: 'g-z-05', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Was war der Kirchenbau im Mittelalter NEBEN Religion noch?',
+        optionen: [
+            'Ort für Markt, Gericht und Feste',
+            'Krankenhaus und Pflegestation',
+            'Königlicher Palast',
+            'Militärische Festung'
+        ],
+        korrekt: 0,
+        erklaerung: 'Kirchen waren mitten in der Stadt Treffpunkt für Markt, Gericht, Feste und Feiern – Zentren des öffentlichen Lebens, nicht nur religiöse Orte.'
+    },
+    {
+        id: 'g-z-06', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Welche berühmte gotische Kirche steht in Deutschland?',
+        optionen: [
+            'Der Kölner Dom',
+            'St. Michael in Hildesheim',
+            'San Marco in Venedig',
+            'Hagia Sophia in Istanbul'
+        ],
+        korrekt: 0,
+        erklaerung: 'Der Kölner Dom (Bauzeit 1248–1880) ist die bekannteste deutsche gotische Kathedrale.'
+    },
+    {
+        id: 'g-z-07', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Wie lange wurde der Kölner Dom gebaut?',
+        optionen: ['632 Jahre (1248–1880)', '50 Jahre', '200 Jahre', '900 Jahre'],
+        korrekt: 0,
+        erklaerung: 'Baubeginn 1248, vollendet erst 1880 – mit langer Unterbrechung. Über 600 Jahre Bauzeit!'
+    },
+    {
+        id: 'g-z-08', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Wo steht die berühmte Kathedrale mit der Südrose von 1227?',
+        optionen: ['In Chartres', 'In Paris', 'In Reims', 'In Köln'],
+        korrekt: 0,
+        erklaerung: 'Die Kathedrale von Chartres in Frankreich ist berühmt für ihre originalen mittelalterlichen Maßwerk- und Rosettenfenster.'
+    },
+    {
+        id: 'g-z-09', bereich: 'gotik', thema: 'kontext', typ: 'mc',
+        frage: 'Warum war die Kirche für die Menschen im Spätmittelalter so wichtig?',
+        optionen: [
+            'Sie gab Sicherheit und versprach Erlösung im Himmel',
+            'Sie verteilte Geld an die Armen',
+            'Sie war die einzige Schule',
+            'Sie regierte die Städte direkt'
+        ],
+        korrekt: 0,
+        erklaerung: 'Seuchen, Hungersnöte und Unwetter wurden als Strafe Gottes gedeutet – die Kirche bot mit ihrem Erlösungsversprechen Halt und Sicherheit.'
+    },
+
+    /* ============ VERGLEICH ROMANIK ↔ GOTIK (Mix) ============ */
+    {
+        id: 'mix-01', bereich: 'mix', thema: 'aussenbau', typ: 'stil',
+        frage: 'Welcher Stil hat dicke Mauern und kleine Fenster?',
+        korrekt: 'romanik',
+        erklaerung: 'Massivbauweise = Romanik. Dicke Mauern tragen die Last, also bleiben Fenster klein.'
+    },
+    {
+        id: 'mix-02', bereich: 'mix', thema: 'konstruktion', typ: 'stil',
+        frage: 'Welcher Stil arbeitet mit Skelettbauweise und Strebewerk?',
+        korrekt: 'gotik',
+        erklaerung: 'Skelettbauweise mit Strebebögen und -pfeilern = Gotik. Die Wand wird vom Tragen befreit.'
+    },
+    {
+        id: 'mix-03', bereich: 'mix', thema: 'grundriss', typ: 'stil',
+        frage: 'Würfelkapitell und Stützenwechsel – welcher Stil?',
+        korrekt: 'romanik',
+        erklaerung: 'Würfelkapitelle und der Wechsel von Pfeiler und Säule sind klassisch romanisch.'
+    },
+    {
+        id: 'mix-04', bereich: 'mix', thema: 'grundriss', typ: 'stil',
+        frage: 'Bündelpfeiler und Kreuzrippengewölbe – welcher Stil?',
+        korrekt: 'gotik',
+        erklaerung: 'Bündelpfeiler führen die Linien des Kreuzrippengewölbes elegant bis zum Boden – beides typisch gotisch.'
+    },
+    {
+        id: 'mix-05', bereich: 'mix', thema: 'aussenbau', typ: 'stil',
+        frage: 'Welche Epoche kommt zuerst – Romanik oder Gotik?',
+        korrekt: 'romanik',
+        erklaerung: 'Romanik (ca. 950–1250) kommt vor der Gotik (ca. 1250–1400).'
+    },
+    {
+        id: 'mix-06', bereich: 'mix', thema: 'kontext', typ: 'stil',
+        frage: 'Reichtum freier Städte und Bauhütten der Handwerker prägen welchen Stil?',
+        korrekt: 'gotik',
+        erklaerung: 'Die Gotik gehört zum Aufstreben der Städte. In der Romanik dominierten dagegen Klöster, Bischöfe und der Kaiser.'
+    },
+    {
+        id: 'mix-07', bereich: 'mix', thema: 'aussenbau', typ: 'bild',
+        frage: 'Welcher Bogen gehört zur Romanik?',
+        optionen: [
+            { svg: 'rundbogen', label: 'A' },
+            { svg: 'spitzbogen', label: 'B' },
+            { svg: 'hufeisenbogen', label: 'C' },
+            { svg: 'korbbogen', label: 'D' }
+        ],
+        korrekt: 0,
+        erklaerung: 'A = Rundbogen, das Erkennungszeichen der Romanik.'
+    }
+];
+
+/* =====================================================
+   GAME STATE
+   ===================================================== */
+const STORAGE_KEY = 'bauhuette_v1';
+let state = {
+    xp: 0,
+    streakDays: 0,
+    lastPlayDate: null,
+    bestByMode: {}
+};
+
+let session = {
+    mode: null,            // e.g. 'romanik:aussenbau' or 'romanik:all' or 'mix:all'
+    questions: [],
+    currentIdx: 0,
+    correct: 0,
+    answered: 0,
+    xpThisRound: 0
+};
+
+function loadState() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) state = { ...state, ...JSON.parse(raw) };
+    } catch (e) {}
+    updateStreak();
+    renderHomeStats();
+}
+
+function saveState() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+}
+
+function todayStr() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function updateStreak() {
+    const today = todayStr();
+    if (state.lastPlayDate === today) {
+        // streak already counted today
+        return;
+    }
+    if (state.lastPlayDate) {
+        const lastDate = new Date(state.lastPlayDate);
+        const todayDate = new Date(today);
+        const diffDays = Math.round((todayDate - lastDate) / 86400000);
+        if (diffDays > 1) {
+            state.streakDays = 0;
+        }
+    }
+}
+
+function bumpStreakOnPlay() {
+    const today = todayStr();
+    if (state.lastPlayDate !== today) {
+        state.streakDays = (state.streakDays || 0) + 1;
+        state.lastPlayDate = today;
+        saveState();
+        showStreakBurst();
+    }
+}
+
+function resetProgress() {
+    if (!confirm('Wirklich Fortschritt zurücksetzen? XP, Streak und Bestleistungen werden gelöscht.')) return;
+    state = { xp: 0, streakDays: 0, lastPlayDate: null, bestByMode: {} };
+    saveState();
+    renderHomeStats();
+}
+
+function renderHomeStats() {
+    document.getElementById('xpValue').textContent = state.xp;
+    document.getElementById('streakValue').textContent = state.streakDays;
+    // XP-Bar zeigt Fortschritt zum nächsten "Level" (alle 100 XP)
+    const xpInLevel = state.xp % 100;
+    document.getElementById('xpBarFill').style.width = xpInLevel + '%';
+}
+
+/* =====================================================
+   HOME UI
+   ===================================================== */
+const BEREICHE = [
+    {
+        key: 'romanik',
+        cls: 'romanik',
+        icon: '🏰',
+        title: 'Romanik',
+        subtitle: '950 – 1250 · Burg Gottes',
+        themen: [
+            { key: 'aussenbau', emoji: '🏛️', label: 'Außenbau' },
+            { key: 'grundriss', emoji: '📐', label: 'Innenraum' },
+            { key: 'konstruktion', emoji: '🧱', label: 'Konstruktion' },
+            { key: 'kontext', emoji: '📜', label: 'Geschichte' }
+        ]
+    },
+    {
+        key: 'gotik',
+        cls: 'gotik',
+        icon: '⛪',
+        title: 'Gotik',
+        subtitle: '1250 – 1400 · Himmlische Stadt',
+        themen: [
+            { key: 'aussenbau', emoji: '🏛️', label: 'Außenbau' },
+            { key: 'grundriss', emoji: '📐', label: 'Innenraum' },
+            { key: 'konstruktion', emoji: '🧱', label: 'Konstruktion' },
+            { key: 'masswerk', emoji: '🌹', label: 'Maßwerk' },
+            { key: 'kontext', emoji: '📜', label: 'Geschichte' }
+        ]
+    },
+    {
+        key: 'mix',
+        cls: 'mix',
+        icon: '🔀',
+        title: 'Mix – Vergleich',
+        subtitle: 'Romanik & Gotik durcheinander',
+        themen: []
+    }
+];
+
+function renderHome() {
+    const row = document.getElementById('bereichRow');
+    row.innerHTML = '';
+    BEREICHE.forEach(b => {
+        const card = document.createElement('div');
+        card.className = `bereich-card ${b.cls}`;
+        let themenHtml = '';
+        if (b.themen.length) {
+            themenHtml = `<div class="bereich-body">` +
+                b.themen.map(t =>
+                    `<button class="thema-chip" onclick="startRound('${b.key}', '${t.key}')"><span class="chip-emoji">${t.emoji}</span><span>${t.label}</span></button>`
+                ).join('') +
+                `</div>`;
+        }
+        card.innerHTML = `
+            <div class="bereich-header">
+                <div class="bereich-icon">${b.icon}</div>
+                <div style="flex:1; min-width:0;">
+                    <div class="bereich-title">${b.title}</div>
+                    <div class="bereich-subtitle">${b.subtitle}</div>
+                </div>
+            </div>
+            ${themenHtml}
+            <button class="bereich-full-btn" onclick="startRound('${b.key}', 'all')">▶ Alles spielen</button>
+        `;
+        row.appendChild(card);
+    });
+}
+
+/* =====================================================
+   ROUND
+   ===================================================== */
+function startRound(bereich, thema) {
+    let pool = [];
+    if (bereich === 'mix') {
+        // Mix: alle Fragen, ordentlich gemischt
+        pool = QUESTIONS.slice();
+    } else {
+        pool = QUESTIONS.filter(q => q.bereich === bereich || (q.bereich === 'mix' && bereich !== 'mix'));
+        if (thema !== 'all') {
+            // Filter auf thema, aber nur innerhalb des gewählten Stils (also nicht Mix-Fragen wenn ein konkreter Stil läuft)
+            pool = pool.filter(q => q.bereich === bereich && q.thema === thema);
+        } else {
+            // 'all' für romanik oder gotik: nur diesen Stil, ohne Mix-Fragen
+            pool = pool.filter(q => q.bereich === bereich);
+        }
+    }
+
+    if (pool.length === 0) {
+        alert('Keine Fragen verfügbar.');
+        return;
+    }
+
+    // Shuffle and limit
+    const shuffled = shuffle(pool);
+    const limit = (bereich === 'mix' || thema === 'all') ? Math.min(12, shuffled.length) : shuffled.length;
+    session = {
+        mode: `${bereich}:${thema}`,
+        questions: shuffled.slice(0, limit),
+        currentIdx: 0,
+        correct: 0,
+        answered: 0,
+        xpThisRound: 0
+    };
+
+    bumpStreakOnPlay();
+    showScreen('quizScreen');
+    applyQuizBg(bereich);
+    renderQuestion();
+}
+
+function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function applyQuizBg(bereich) {
+    const s = document.getElementById('quizScreen');
+    s.classList.remove('quiz-bg-romanik', 'quiz-bg-gotik', 'quiz-bg-mix');
+    if (bereich === 'romanik') s.classList.add('quiz-bg-romanik');
+    else if (bereich === 'gotik') s.classList.add('quiz-bg-gotik');
+    else s.classList.add('quiz-bg-mix');
+}
+
+function renderQuestion() {
+    const q = session.questions[session.currentIdx];
+    document.getElementById('qNow').textContent = session.currentIdx + 1;
+    document.getElementById('qTotal').textContent = session.questions.length;
+    document.getElementById('progFill').style.width = ((session.currentIdx) / session.questions.length * 100) + '%';
+
+    const stil = (q.bereich === 'mix') ? null : q.bereich;
+    const stilLabel = stil === 'romanik' ? 'Romanik' : stil === 'gotik' ? 'Gotik' : 'Vergleich';
+    const stilClass = stil === 'romanik' ? 'romanik' : stil === 'gotik' ? 'gotik' : 'romanik';
+
+    const mechLabel = {
+        mc: 'Frage',
+        bild: 'Bilder-Quiz',
+        wf: 'Wahr / Falsch',
+        stil: 'Stil zuordnen',
+        luecke: 'Lückentext',
+        beschriften: 'Beschriften'
+    }[q.typ] || 'Frage';
+
+    let html = `<span class="stil-pill ${stilClass}">${q.bereich === 'mix' ? '⚖️' : '⛪'} ${stilLabel}</span>`;
+    html += `<span class="mech-pill">${mechLabel}</span>`;
+
+    // Hint-SVG (zusätzliche Visualisierung)
+    if (q.hintSvg && SVGS[q.hintSvg]) {
+        html += `<div class="hint-svg-wrap">${SVGS[q.hintSvg]}</div>`;
+    }
+
+    // Frage-Text mit eventueller Lücke
+    let frageHtml = q.frage;
+    if (q.typ === 'luecke') {
+        frageHtml = q.frage.replace('___', '<span class="luecke" id="lueckeSpan">___</span>');
+    }
+    html += `<div class="question-text">${frageHtml}</div>`;
+
+    if (q.hintText) {
+        html += `<div class="hint-svg-wrap" style="font-style:italic; color:#374151; min-height:auto; padding:14px; font-size:14px; text-align:center;">„${q.hintText}"</div>`;
+    }
+
+    // Antwortbereich je nach Mechanik
+    if (q.typ === 'mc' || q.typ === 'luecke') {
+        html += `<div class="answers" id="answersWrap">` +
+            q.optionen.map((opt, i) => `
+                <button class="answer-btn" data-idx="${i}" onclick="answerMC(${i})">
+                    <span class="ans-letter">${String.fromCharCode(65 + i)}</span>
+                    <span class="ans-text">${opt}</span>
+                    <span class="ans-icon"></span>
+                </button>
+            `).join('') + `</div>`;
+    } else if (q.typ === 'bild') {
+        html += `<div class="answers-bild" id="answersWrap">` +
+            q.optionen.map((opt, i) => `
+                <button class="answer-bild-btn" data-idx="${i}" onclick="answerMC(${i})">
+                    ${SVGS[opt.svg] || ''}
+                    <span class="bild-label">${opt.label}</span>
+                </button>
+            `).join('') + `</div>`;
+    } else if (q.typ === 'wf') {
+        html += `<div class="answers-wf" id="answersWrap">
+            <button class="wf-btn" data-val="true" onclick="answerWF(true)">✓ Wahr</button>
+            <button class="wf-btn" data-val="false" onclick="answerWF(false)">✗ Falsch</button>
+        </div>`;
+    } else if (q.typ === 'stil') {
+        html += `<div class="answers-stil" id="answersWrap">
+            <button class="stil-btn s-romanik" data-val="romanik" onclick="answerStil('romanik')">🏰 Romanik<small>950–1250</small></button>
+            <button class="stil-btn s-gotik" data-val="gotik" onclick="answerStil('gotik')">⛪ Gotik<small>1250–1400</small></button>
+        </div>`;
+    }
+
+    // Feedback + Next placeholder
+    html += `<div class="feedback-box" id="feedbackBox">
+        <div class="fb-title" id="fbTitle"></div>
+        <div class="fb-fact" id="fbFact"></div>
+    </div>`;
+    html += `<button class="btn-next" id="btnNext" onclick="nextQuestion()">Weiter →</button>`;
+
+    document.getElementById('quizCardContent').innerHTML = html;
+}
+
+/* ---------- Answering ---------- */
+function answerMC(idx) {
+    const q = session.questions[session.currentIdx];
+    const correct = idx === q.korrekt;
+    const btns = document.querySelectorAll('#answersWrap .answer-btn, #answersWrap .answer-bild-btn');
+    btns.forEach((b, i) => {
+        b.disabled = true;
+        const dataIdx = parseInt(b.dataset.idx, 10);
+        if (dataIdx === q.korrekt) {
+            b.classList.add('a-correct');
+            const icon = b.querySelector('.ans-icon');
+            if (icon) icon.textContent = '✓';
+        } else if (dataIdx === idx) {
+            b.classList.add('a-wrong');
+            const icon = b.querySelector('.ans-icon');
+            if (icon) icon.textContent = '✗';
+        } else {
+            b.classList.add('a-dimmed');
+        }
+    });
+
+    // Lücke füllen (kosmetisch)
+    if (q.typ === 'luecke') {
+        const luecke = document.getElementById('lueckeSpan');
+        if (luecke) {
+            luecke.textContent = q.optionen[q.korrekt];
+            luecke.classList.add('filled');
+        }
+    }
+
+    finishQuestion(correct, q);
+}
+
+function answerWF(val) {
+    const q = session.questions[session.currentIdx];
+    const correct = (val === q.korrekt);
+    document.querySelectorAll('#answersWrap .wf-btn').forEach(b => {
+        b.disabled = true;
+        const v = b.dataset.val === 'true';
+        if (v === q.korrekt) b.classList.add('a-correct');
+        else if (v === val) b.classList.add('a-wrong');
+        else b.classList.add('a-dimmed');
+    });
+    finishQuestion(correct, q);
+}
+
+function answerStil(val) {
+    const q = session.questions[session.currentIdx];
+    const correct = (val === q.korrekt);
+    document.querySelectorAll('#answersWrap .stil-btn').forEach(b => {
+        b.disabled = true;
+        const v = b.dataset.val;
+        if (v === q.korrekt) b.classList.add('a-correct');
+        else if (v === val) b.classList.add('a-wrong');
+        else b.classList.add('a-dimmed');
+    });
+    finishQuestion(correct, q);
+}
+
+function finishQuestion(correct, q) {
+    session.answered++;
+    if (correct) {
+        session.correct++;
+        const gain = 10;
+        session.xpThisRound += gain;
+        state.xp += gain;
+        saveState();
+        renderHomeStats();
+        showXpPop(gain);
+    }
+
+    const fb = document.getElementById('feedbackBox');
+    fb.classList.remove('fb-correct', 'fb-wrong');
+    fb.classList.add(correct ? 'fb-correct' : 'fb-wrong');
+    document.getElementById('fbTitle').textContent = correct ? '✓ Richtig!' : '✗ Knapp daneben';
+    document.getElementById('fbFact').textContent = q.erklaerung;
+    fb.classList.add('show');
+    document.getElementById('btnNext').classList.add('show');
+}
+
+function nextQuestion() {
+    session.currentIdx++;
+    if (session.currentIdx >= session.questions.length) {
+        endRound();
+    } else {
+        renderQuestion();
+    }
+}
+
+/* ---------- End Round ---------- */
+function endRound() {
+    const total = session.questions.length;
+    const pct = Math.round((session.correct / total) * 100);
+
+    // Best tracking
+    const prev = state.bestByMode[session.mode] || 0;
+    if (pct > prev) {
+        state.bestByMode[session.mode] = pct;
+        saveState();
+    }
+
+    let emoji, title, sub;
+    if (pct === 100) { emoji = '🏆'; title = 'Meisterbau!'; sub = 'Alle Antworten richtig – wie ein gotischer Werkmeister.'; launchConfetti(80); }
+    else if (pct >= 80) { emoji = '🌟'; title = 'Stark!'; sub = 'Fast perfekt. Du hast den Stil verstanden.'; launchConfetti(40); }
+    else if (pct >= 60) { emoji = '😊'; title = 'Gut gemacht!'; sub = 'Solides Wissen – noch ein wenig schleifen.'; }
+    else { emoji = '🛠️'; title = 'Weiterbauen!'; sub = 'Bauhütte sagt: nochmal üben lohnt sich.'; }
+
+    document.getElementById('endEmoji').textContent = emoji;
+    document.getElementById('endTitle').textContent = title;
+    document.getElementById('endSubtitle').textContent = sub;
+    document.getElementById('endScore').textContent = `${session.correct}/${total}`;
+    document.getElementById('endXp').textContent = `+${session.xpThisRound}`;
+    document.getElementById('endBest').textContent = state.bestByMode[session.mode] + '%';
+    showScreen('endScreen');
+    applyEndBg();
+}
+
+function applyEndBg() {
+    const [bereich] = session.mode.split(':');
+    const s = document.getElementById('endScreen');
+    s.className = 'screen active';
+    if (bereich === 'romanik') s.classList.add('quiz-bg-romanik');
+    else if (bereich === 'gotik') s.classList.add('quiz-bg-gotik');
+    else s.classList.add('quiz-bg-mix');
+}
+
+function retryRound() {
+    const [bereich, thema] = session.mode.split(':');
+    startRound(bereich, thema);
+}
+
+/* ---------- Navigation ---------- */
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+function goHome() {
+    document.getElementById('quizScreen').classList.remove('quiz-bg-romanik', 'quiz-bg-gotik', 'quiz-bg-mix');
+    document.getElementById('endScreen').classList.remove('quiz-bg-romanik', 'quiz-bg-gotik', 'quiz-bg-mix');
+    showScreen('homeScreen');
+    renderHomeStats();
+}
+
+/* ---------- Effects ---------- */
+function launchConfetti(count) {
+    const wrap = document.getElementById('confettiWrap');
+    const colors = ['#F5C842', '#b8662f', '#3a5a9c', '#f4e3d0', '#d8e1f3', '#22c55e'];
+    for (let i = 0; i < count; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetto';
+        c.style.left = Math.random() * 100 + 'vw';
+        c.style.background = colors[Math.floor(Math.random() * colors.length)];
+        c.style.animationDuration = (2 + Math.random() * 2) + 's';
+        c.style.animationDelay = (Math.random() * 0.4) + 's';
+        c.style.width = (6 + Math.random() * 8) + 'px';
+        c.style.height = (10 + Math.random() * 8) + 'px';
+        wrap.appendChild(c);
+        setTimeout(() => c.remove(), 4500);
+    }
+}
+
+function showXpPop(amount) {
+    const pop = document.createElement('div');
+    pop.className = 'xp-pop';
+    pop.textContent = '+' + amount + ' XP';
+    document.body.appendChild(pop);
+    setTimeout(() => pop.remove(), 1500);
+}
+
+function showStreakBurst() {
+    if (state.streakDays < 2) return; // erst ab 2 Tagen feiern
+    const burst = document.createElement('div');
+    burst.className = 'streak-burst';
+    burst.textContent = `🔥 ${state.streakDays} Tage Streak!`;
+    document.body.appendChild(burst);
+    setTimeout(() => burst.remove(), 1400);
+}
+
+/* =====================================================
+   BOOT
+   ===================================================== */
+loadState();
+renderHome();
+</script>
+
+</body>
+</html>
