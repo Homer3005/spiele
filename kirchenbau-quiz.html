@@ -1481,9 +1481,12 @@ function startRound(bereich, thema) {
     // Shuffle and limit
     const shuffled = shuffle(pool);
     const limit = (bereich === 'mix' || thema === 'all') ? Math.min(12, shuffled.length) : shuffled.length;
+    // Pro Frage: Antwortpositionen mischen, damit die richtige Antwort nicht
+    // immer an derselben Stelle steht.
+    const prepared = shuffled.slice(0, limit).map(prepareQuestion);
     session = {
         mode: `${bereich}:${thema}`,
-        questions: shuffled.slice(0, limit),
+        questions: prepared,
         currentIdx: 0,
         correct: 0,
         answered: 0,
@@ -1503,6 +1506,23 @@ function shuffle(arr) {
         [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
+}
+
+/* Antwortpositionen mischen, korrekt-Index nachziehen.
+   Gilt für alle Fragen mit array-basierten optionen (mc, bild, luecke). */
+function prepareQuestion(q) {
+    if (!q.optionen || !Array.isArray(q.optionen)) return q;
+    if (typeof q.korrekt !== 'number') return q;
+    const indices = q.optionen.map((_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    return {
+        ...q,
+        optionen: indices.map(i => q.optionen[i]),
+        korrekt: indices.indexOf(q.korrekt)
+    };
 }
 
 function applyQuizBg(bereich) {
