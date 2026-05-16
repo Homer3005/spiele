@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
+    <title>🎓 Ellas Quiz</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(160deg, #7C3AED 0%, #EC4899 55%, #F59E0B 100%);
+        }
+        .screen { display: none; }
+        .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px 16px; }
+        .card {
+            background: white; border-radius: 28px; padding: 32px 24px;
+            max-width: 420px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25); text-align: center;
+        }
+        h1 { font-size: 28px; font-weight: 900; color: #1a1a1a; margin-bottom: 4px; }
+        .subtitle { color: #6b7280; font-size: 14px; margin-bottom: 24px; }
+        .categories-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .cat-badge { border-radius: 12px; padding: 10px 12px; text-align: left; border: 1px solid; }
+        .cat-emoji { font-size: 18px; margin-bottom: 4px; display: block; }
+        .cat-name { font-size: 11px; font-weight: 700; }
+        .c-sub  { background:#eff6ff; border-color:#93c5fd; } .c-sub  .cat-name { color:#1d4ed8; }
+        .c-rae  { background:#faf5ff; border-color:#d8b4fe; } .c-rae  .cat-name { color:#7c3aed; }
+        .c-rec  { background:#fff7ed; border-color:#fdba74; } .c-rec  .cat-name { color:#c2410c; }
+        .c-len  { background:#f0fdf4; border-color:#86efac; } .c-len  .cat-name { color:#15803d; }
+        .c-deu  { background:#fdf2f8; border-color:#f9a8d4; } .c-deu  .cat-name { color:#be185d; }
+        .info-box {
+            background: #f9fafb; border-radius: 12px; padding: 12px;
+            font-size: 13px; color: #6b7280; margin-bottom: 24px;
+        }
+        .info-box strong { color: #1a1a1a; }
+        .btn-primary {
+            width: 100%; background: linear-gradient(90deg,#7C3AED,#EC4899);
+            color: white; font-size: 17px; font-weight: 700; padding: 16px;
+            border: none; border-radius: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-family: inherit; transition: transform 0.1s; margin-bottom: 10px;
+        }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-back {
+            width: 100%; background: transparent;
+            color: #6b7280; font-size: 14px; font-weight: 700; padding: 10px;
+            border: none; border-radius: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: inherit;
+        }
+
+        /* Quiz Screen */
+        #quizScreen { align-items: stretch; padding: 16px; justify-content: flex-start; padding-top: 32px; }
+        #quizScreen .inner { max-width: 480px; margin: 0 auto; width: 100%; }
+        .prog-top { display:flex; justify-content:space-between; color:white; font-size:13px; font-weight:600; margin-bottom:8px; }
+        .prog-track { width:100%; height:8px; background:rgba(255,255,255,0.3); border-radius:99px; overflow:hidden; margin-bottom:16px; }
+        .prog-fill { height:8px; background:white; border-radius:99px; transition:width 0.4s ease; }
+        .quiz-card { background:white; border-radius:24px; padding:24px; box-shadow:0 16px 48px rgba(0,0,0,0.2); }
+        .cat-pill {
+            display:inline-flex; align-items:center; gap:6px;
+            border-radius:99px; padding:4px 12px; font-size:11px; font-weight:700;
+            border:1px solid; margin-bottom:16px;
+        }
+        .question-text { font-size:16px; font-weight:700; color:#1a1a1a; line-height:1.4; margin-bottom:20px; }
+        .answers { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+        .answer-btn {
+            width:100%; background:#f9fafb; border:2px solid #e5e7eb; border-radius:14px;
+            padding:14px 16px; display:flex; align-items:center; gap:12px;
+            cursor:pointer; text-align:left; font-family:inherit;
+            transition:border-color 0.15s, background 0.15s, transform 0.1s;
+        }
+        .answer-btn:active:not(:disabled) { transform:scale(0.98); }
+        .answer-btn:disabled { cursor:default; }
+        .answer-btn.a-correct { background:#dcfce7 !important; border-color:#22c55e !important; }
+        .answer-btn.a-wrong   { background:#fee2e2 !important; border-color:#ef4444 !important; }
+        .answer-btn.a-dimmed  { opacity:0.4; }
+        .ans-letter {
+            width:28px; height:28px; border-radius:50%; background:#e5e7eb;
+            display:flex; align-items:center; justify-content:center;
+            font-size:12px; font-weight:700; color:#374151; flex-shrink:0;
+        }
+        .ans-text { flex:1; font-size:14px; font-weight:500; color:#1a1a1a; line-height:1.3; }
+        .ans-icon { font-size:18px; flex-shrink:0; min-width:20px; }
+        .feedback-box {
+            border-radius:14px; padding:14px; margin-bottom:16px; border:1px solid;
+            display:none; animation:fadeUp 0.25s ease;
+        }
+        .feedback-box.show { display:block; }
+        .fb-correct { background:#f0fdf4; border-color:#86efac; }
+        .fb-wrong   { background:#fef2f2; border-color:#fca5a5; }
+        .fb-title { font-size:14px; font-weight:700; margin-bottom:8px; }
+        .fb-fact  { font-size:13px; color:#374151; line-height:1.5; }
+        .btn-next {
+            width:100%; background:linear-gradient(90deg,#7C3AED,#EC4899);
+            color:white; font-size:15px; font-weight:700; padding:14px;
+            border:none; border-radius:14px; cursor:pointer;
+            display:none; align-items:center; justify-content:center; gap:6px;
+            font-family:inherit; animation:fadeUp 0.25s ease;
+        }
+        .btn-next.show { display:flex; }
+        .btn-next:active { transform:scale(0.97); }
+        @keyframes fadeUp {
+            from { opacity:0; transform:translateY(10px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Results */
+        .result-icon  { font-size:64px; margin-bottom:12px; }
+        .result-title { font-size:26px; font-weight:900; color:#1a1a1a; margin-bottom:6px; }
+        .result-msg   { color:#6b7280; font-size:14px; margin-bottom:24px; }
+        .result-score { font-size:56px; font-weight:900; color:#7C3AED; line-height:1; margin-bottom:4px; }
+        .result-pct   { font-size:22px; font-weight:700; color:#9ca3af; margin-bottom:20px; }
+        .result-track { width:100%; height:14px; background:#e5e7eb; border-radius:99px; overflow:hidden; margin-bottom:24px; }
+        .result-fill  { height:14px; background:linear-gradient(90deg,#7C3AED,#EC4899,#F59E0B); border-radius:99px; transition:width 1.2s cubic-bezier(0.22,1,0.36,1); }
+    </style>
+</head>
+<body>
+
+<!-- Welcome -->
+<div id="welcomeScreen" class="screen active">
+    <div class="card">
+        <div style="font-size:48px;margin-bottom:8px;">🎓</div>
+        <h1>Ellas Quiz</h1>
+        <p class="subtitle">Mathe &amp; Deutsch · 3. Klasse · 15.05.2026</p>
+        <div class="categories-grid">
+            <div class="cat-badge c-sub"><span class="cat-emoji">➖</span><span class="cat-name">Subtraktion</span></div>
+            <div class="cat-badge c-rae"><span class="cat-emoji">🧩</span><span class="cat-name">Zahlenrätsel</span></div>
+            <div class="cat-badge c-rec"><span class="cat-emoji">🎲</span><span class="cat-name">Rechenarten</span></div>
+            <div class="cat-badge c-len"><span class="cat-emoji">📏</span><span class="cat-name">Längen</span></div>
+            <div class="cat-badge c-deu"><span class="cat-emoji">💬</span><span class="cat-name">Begleitsätze</span></div>
+            <div class="cat-badge c-rae"><span class="cat-emoji">⭐</span><span class="cat-name">5 KVs gesamt</span></div>
+        </div>
+        <div class="info-box"><strong>50 Fragen</strong> · Sachaufgaben · Zahlenrätsel · 4 Grundrechenarten · Längeneinheiten · wörtliche Rede</div>
+        <button class="btn-primary" onclick="startGame()">Jetzt loslegen! 🚀</button>
+        <button class="btn-back" onclick="window.location.href='index.html'">← Zurück zur Übersicht</button>
+    </div>
+</div>
+
+<!-- Quiz -->
+<div id="quizScreen" class="screen">
+    <div class="inner">
+        <div class="prog-top">
+            <span id="qCounter">Frage 1 / 50</span>
+            <span id="cCounter">✅ 0 richtig</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+        <div class="quiz-card">
+            <div class="cat-pill" id="catPill"></div>
+            <div class="question-text" id="qText"></div>
+            <div class="answers" id="answersDiv"></div>
+            <div class="feedback-box" id="fbBox">
+                <div class="fb-title" id="fbTitle"></div>
+                <div class="fb-fact"  id="fbFact"></div>
+            </div>
+            <button class="btn-next" id="nextBtn" onclick="nextQ()">
+                <span id="nextTxt">Weiter ➜</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Results -->
+<div id="resultsScreen" class="screen">
+    <div class="card">
+        <div class="result-icon"  id="rIcon"></div>
+        <div class="result-title" id="rTitle"></div>
+        <div class="result-msg"   id="rMsg"></div>
+        <div class="result-score" id="rScore"></div>
+        <div class="result-pct"   id="rPct"></div>
+        <div class="result-track"><div class="result-fill" id="rFill" style="width:0%"></div></div>
+        <button class="btn-primary" onclick="startGame()">🔄 Nochmal spielen!</button>
+        <button class="btn-back" onclick="window.location.href='index.html'">← Zurück zur Übersicht</button>
+    </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+const CAT = {
+    "Subtraktion":   { cls:"c-sub", emoji:"➖", bg:"#eff6ff", border:"#93c5fd", color:"#1d4ed8" },
+    "Zahlenrätsel":  { cls:"c-rae", emoji:"🧩", bg:"#faf5ff", border:"#d8b4fe", color:"#7c3aed" },
+    "Rechenarten":   { cls:"c-rec", emoji:"🎲", bg:"#fff7ed", border:"#fdba74", color:"#c2410c" },
+    "Längen":        { cls:"c-len", emoji:"📏", bg:"#f0fdf4", border:"#86efac", color:"#15803d" },
+    "Begleitsätze":  { cls:"c-deu", emoji:"💬", bg:"#fdf2f8", border:"#f9a8d4", color:"#be185d" },
+};
+
+const QS = [
+  // ========= SUBTRAKTION (KV 89 - Sachaufgaben) =========
+  {cat:"Subtraktion", q:"Die Schulbücherei hat 241 Bücher. 58 Bücher sind ausgeliehen. Wie viele Bücher stehen noch in der Schulbücherei?",
+   a:["173","183","193","273"], c:1,
+   f:"241 − 58 = 183. Von der Gesamtzahl ziehst du die ausgeliehenen Bücher ab."},
+  {cat:"Subtraktion", q:"Die Stadtbücherei hat 476 Tierbücher. 287 Tierbücher sind im Moment ausgeliehen. Wie viele Tierbücher sind noch in der Bücherei?",
+   a:["179","189","199","289"], c:1,
+   f:"476 − 287 = 189. Ziehe von der Gesamtzahl die ausgeliehenen Bücher ab."},
+  {cat:"Subtraktion", q:"Bäcker Rinke hat heute 935 Brötchen gebacken. Am Vormittag werden 328 Brötchen verkauft, am Nachmittag 469. Wie viele Brötchen sind am Abend noch übrig?",
+   a:["128","138","148","158"], c:1,
+   f:"935 − 328 − 469 = 138. Erst Vormittag abziehen (935 − 328 = 607), dann Nachmittag (607 − 469 = 138)."},
+  {cat:"Subtraktion", q:"Bäcker Rinke hat 638 Brötchen gebacken. Morgens werden 415 verkauft, mittags noch 114. Wie viele Brötchen sind abends übrig?",
+   a:["99","109","119","129"], c:1,
+   f:"638 − 415 − 114 = 109. Beide Verkaufsmengen vom Gesamtvorrat abziehen."},
+  {cat:"Subtraktion", q:"Bäcker Rinke hat 275 Hörnchen gebacken. Morgens werden 180 verkauft, mittags noch 92. Wie viele Hörnchen sind abends übrig?",
+   a:["3","13","23","33"], c:0,
+   f:"275 − 180 − 92 = 3. Knapp – fast alle Hörnchen sind verkauft!"},
+
+  // ========= ZAHLENRÄTSEL (KV 91) =========
+  {cat:"Zahlenrätsel", q:"Subtrahiere von der Zahl 649 die Zahl 321. Welche Zahl kommt heraus?",
+   a:["318","328","338","348"], c:1,
+   f:"649 − 321 = 328. Schreib es untereinander, dann Stelle für Stelle abziehen."},
+  {cat:"Zahlenrätsel", q:"Meine Zahl ist um 320 kleiner als die Zahl 560. Wie heißt meine Zahl?",
+   a:["230","240","250","880"], c:1,
+   f:"560 − 320 = 240. „Kleiner als“ heißt: du musst subtrahieren."},
+  {cat:"Zahlenrätsel", q:"Meine Zahl ist um 492 größer als die Zahl 289. Wie heißt meine Zahl?",
+   a:["671","771","781","791"], c:2,
+   f:"289 + 492 = 781. „Größer als“ heißt: du musst addieren."},
+  {cat:"Zahlenrätsel", q:"Addiere die Zahlen 333 und 666. Welche Zahl kommt heraus?",
+   a:["989","999","1.009","1.099"], c:1,
+   f:"333 + 666 = 999. Schöne, glatte Zahlen!"},
+  {cat:"Zahlenrätsel", q:"Subtrahiere von der Zahl 924 die Zahl 824. Welche Zahl kommt heraus?",
+   a:["10","100","110","1.000"], c:1,
+   f:"924 − 824 = 100. Die Hunderter sind gleich, die Differenz ist 100."},
+  {cat:"Zahlenrätsel", q:"Bilde die Summe aus den Zahlen 762 und 255. Welche Zahl kommt heraus?",
+   a:["907","1.007","1.017","1.027"], c:2,
+   f:"762 + 255 = 1.017. „Summe“ bedeutet: addieren."},
+  {cat:"Zahlenrätsel", q:"Wenn du zu meiner Zahl 420 addierst, erhältst du 540. Wie heißt meine Zahl?",
+   a:["110","120","130","960"], c:1,
+   f:"540 − 420 = 120. Du suchst rückwärts: ? + 420 = 540."},
+  {cat:"Zahlenrätsel", q:"Wenn du von meiner Zahl 498 subtrahierst, erhältst du 234. Wie heißt meine Zahl?",
+   a:["264","632","712","732"], c:3,
+   f:"234 + 498 = 732. Achtung: Es heißt „von meiner Zahl 498 subtrahieren“ – also meine Zahl − 498 = 234. Rückwärts: 234 + 498 = 732."},
+
+  // ========= RECHENARTEN (KV 56 - Vier Grundrechenarten) =========
+  {cat:"Rechenarten", q:"Multipliziere 5 und 3. Addiere zum Ergebnis noch 16. Welche Zahl kommt heraus?",
+   a:["21","25","31","38"], c:2,
+   f:"5 · 3 = 15, dann 15 + 16 = 31. Punkt-vor-Strich beachten!"},
+  {cat:"Rechenarten", q:"Dividiere 54 durch 6 und addiere dann 802. Welche Zahl kommt heraus?",
+   a:["802","811","821","859"], c:1,
+   f:"54 : 6 = 9, dann 9 + 802 = 811. Erst dividieren, dann addieren."},
+  {cat:"Rechenarten", q:"Verdopple die Zahl 27. Subtrahiere dann 16. Welche Zahl kommt heraus?",
+   a:["11","28","38","48"], c:2,
+   f:"27 · 2 = 54, dann 54 − 16 = 38. „Verdoppeln“ heißt: mal 2."},
+  {cat:"Rechenarten", q:"Multipliziere die Zahlen 7 und 9. Addiere zu dem Ergebnis 540. Welche Zahl kommt heraus?",
+   a:["540","583","603","613"], c:2,
+   f:"7 · 9 = 63, dann 63 + 540 = 603."},
+  {cat:"Rechenarten", q:"Dividiere 42 durch 6. Multipliziere das Ergebnis mit 5. Welche Zahl kommt heraus?",
+   a:["30","35","40","45"], c:1,
+   f:"42 : 6 = 7, dann 7 · 5 = 35."},
+  {cat:"Rechenarten", q:"Welche Zahl ist um 120 größer als 500? Subtrahiere davon 240. Welche Zahl kommt heraus?",
+   a:["260","360","380","620"], c:2,
+   f:"500 + 120 = 620, dann 620 − 240 = 380. Zwei Schritte!"},
+  {cat:"Rechenarten", q:"Subtrahiere 630 von 640. Multipliziere das Ergebnis mit 10. Welche Zahl kommt heraus?",
+   a:["0","10","100","1.000"], c:2,
+   f:"640 − 630 = 10, dann 10 · 10 = 100."},
+  {cat:"Rechenarten", q:"Dividiere 64 durch 8. Addiere zum Ergebnis 20 und 750. Welche Zahl kommt heraus?",
+   a:["758","768","778","788"], c:2,
+   f:"64 : 8 = 8, dann 8 + 20 + 750 = 778."},
+  {cat:"Rechenarten", q:"Halbiere die Zahl 240. Subtrahiere das Ergebnis von 520. Welche Zahl kommt heraus?",
+   a:["280","380","400","420"], c:2,
+   f:"240 : 2 = 120, dann 520 − 120 = 400. „Halbieren“ heißt: durch 2."},
+  {cat:"Rechenarten", q:"Multipliziere 5 mit dem Doppelten von 4. Subtrahiere das Ergebnis von der Zahl 900. Welche Zahl kommt heraus?",
+   a:["855","860","880","895"], c:1,
+   f:"Das Doppelte von 4 ist 8. 5 · 8 = 40. Dann 900 − 40 = 860."},
+
+  // ========= LÄNGEN (KV 158 - Längeneinheiten) =========
+  {cat:"Längen", q:"In einer Stunde kannst du 5 ___ weit wandern. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:3,
+   f:"5 km in einer Stunde – das ist normales Wandertempo für Kinder und Erwachsene."},
+  {cat:"Längen", q:"Eine kleine Füllerpatrone ist 38 ___ lang. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:0,
+   f:"38 mm sind ca. 3,8 cm. Eine Füllerpatrone ist ungefähr so lang wie dein Daumen."},
+  {cat:"Längen", q:"950 ___ sind fast 1 km. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:2,
+   f:"1 km = 1000 m. Also sind 950 m fast 1 km – es fehlen nur 50 m."},
+  {cat:"Längen", q:"Eine Tür ist meistens 80 ___ breit. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:1,
+   f:"80 cm sind 0,8 m. Das ist die typische Türbreite."},
+  {cat:"Längen", q:"Eine Tür ist meistens 2 ___ hoch. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:2,
+   f:"Türen sind meistens 2 m hoch – knapp über deinem Vater!"},
+  {cat:"Längen", q:"Julias Schulweg ist 800 ___ lang. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:2,
+   f:"800 m sind nicht ganz 1 km – ein guter Schulweg, etwa 10 Minuten zu Fuß."},
+  {cat:"Längen", q:"Ein Zollstock ist 200 ___ lang. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:1,
+   f:"200 cm = 2 m. So lang sind die meisten Zollstöcke (Meterstäbe)."},
+  {cat:"Längen", q:"Simon ist 160 ___ groß. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:1,
+   f:"160 cm = 1,60 m. Eine normale Größe für Jugendliche oder kleine Erwachsene."},
+  {cat:"Längen", q:"Viele Postkarten sind 148 ___ lang. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:0,
+   f:"148 mm = 14,8 cm. Das ist die normale Postkarten-Länge (DIN A6)."},
+  {cat:"Längen", q:"Ein Wollknäuel hat 160 ___ Garn. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:2,
+   f:"160 m Wolle – damit kann man richtig viel stricken!"},
+  {cat:"Längen", q:"Mein Fußabdruck ist etwa 220 ___ lang. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:0,
+   f:"220 mm = 22 cm. Das passt für Schuhgröße 34 oder 35."},
+  {cat:"Längen", q:"Der höchste Berg der Welt ist über 8 ___ hoch. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:3,
+   f:"Der Mount Everest ist 8.848 m hoch – also etwa 8,8 km. Über den Wolken!"},
+  {cat:"Längen", q:"Ein neuer Bleistift ist 17 ___ lang. Welche Einheit passt?",
+   a:["mm","cm","m","km"], c:1,
+   f:"17 cm = 170 mm. Das passt für einen normalen, frisch gespitzten Bleistift."},
+  {cat:"Längen", q:"Wie lang ist ein Fußballfeld ungefähr?",
+   a:["10 m","100 m","1.000 m","10.000 m"], c:1,
+   f:"Ein normales Fußballfeld ist ungefähr 100 m lang."},
+  {cat:"Längen", q:"Auf einem Wegweiser steht „1 km“. Wie viele Meter sind das?",
+   a:["10 m","100 m","1.000 m","10.000 m"], c:2,
+   f:"1 km = 1.000 m. Das ist die Grundregel!"},
+  {cat:"Längen", q:"Wenn du 30 Minuten wanderst, kommst du etwa wie weit?",
+   a:["20 m","200 m","2.000 m","20.000 m"], c:2,
+   f:"In 1 Stunde schaffst du etwa 5 km (= 5.000 m). In der Hälfte der Zeit also ca. 2.000 m."},
+  {cat:"Längen", q:"Wie hoch ist ein hoher Sprungturm im Schwimmbad?",
+   a:["1 m","10 m","100 m","1.000 m"], c:1,
+   f:"Olympische Sprungtürme sind 10 m hoch – das ist ganz schön hoch!"},
+
+  // ========= BEGLEITSÄTZE & WÖRTLICHE REDE (KV 33) =========
+  {cat:"Begleitsätze", q:"„Tor! Tor! Tor!“ Wer ruft das wahrscheinlich?",
+   a:["Lehrerin","Bäcker","Fußballer","Polizistin"], c:2,
+   f:"Bei einem Tor jubelt der Fußballer ganz laut!"},
+  {cat:"Begleitsätze", q:"„Kannst du das Kind genau beschreiben?“ Wer fragt das wahrscheinlich?",
+   a:["Lehrerin","Bäcker","Fußballer","Polizistin"], c:3,
+   f:"Die Polizistin fragt nach einer Personenbeschreibung – das gehört zu ihrem Beruf."},
+  {cat:"Begleitsätze", q:"„Wir haben heute Brezeln im Angebot.“ Wer sagt das wahrscheinlich?",
+   a:["Lehrerin","Bäcker","Fußballer","Polizistin"], c:1,
+   f:"Der Bäcker verkauft Brezeln und macht auf Angebote aufmerksam."},
+  {cat:"Begleitsätze", q:"„Achtung, ich komme!“ Welches Verb passt am besten in den Begleitsatz?",
+   a:["meckern","rufen","fragen","berichten"], c:1,
+   f:"Bei einer Warnung mit „Achtung!“ wird laut gerufen. „Leo ruft: …“"},
+  {cat:"Begleitsätze", q:"„Wann wird es abends dunkel?“ Welches Verb passt am besten?",
+   a:["rufen","sagen","fragen","bitten"], c:2,
+   f:"Sätze mit Fragezeichen (?) werden gefragt. „Tom fragt: …“"},
+  {cat:"Begleitsätze", q:"„Die Mathearbeit war gar nicht so schwer.“ Welches Verb passt am besten?",
+   a:["meckern","rufen","sagen","fragen"], c:2,
+   f:"Eine ganz normale Aussage – da passt einfach „sagen“ am besten."},
+  {cat:"Begleitsätze", q:"„Ziehe sofort deine Schuhe aus!“ Welches Verb passt am besten?",
+   a:["meckern","bitten","sagen","berichten"], c:0,
+   f:"„Sofort!“ und der Befehlston zeigen: Da meckert jemand. „Tjara meckert: …“"},
+  {cat:"Begleitsätze", q:"„Kannst du mir bitte helfen?“ Welches Verb passt am besten?",
+   a:["rufen","sagen","fragen","bitten"], c:3,
+   f:"Mit „bitte“ wird höflich gebeten – das Verb ist „bitten“. „Finja bittet: …“"},
+  {cat:"Begleitsätze", q:"„Morgens trinke ich gern Früchtetee.“ Welches Verb passt am besten?",
+   a:["meckern","fragen","berichten","bitten"], c:2,
+   f:"Wenn jemand von sich erzählt, ist das „berichten“. „Ella berichtet: …“"},
+  {cat:"Begleitsätze", q:"Welcher Begleitsatz ist richtig geschrieben?",
+   a:["Tom fragt „Wie spät ist es?“","Tom fragt: „Wie spät ist es?“","Tom fragt - „Wie spät ist es?“","Tom fragt, „Wie spät ist es?“"], c:1,
+   f:"Vor der wörtlichen Rede steht IMMER ein Doppelpunkt (:) – danach kommen die Anführungszeichen unten („) und am Ende oben (“)."},
+];
+
+let questions = [], idx = 0, correct = 0;
+
+function shuffle(a) {
+    const b = [...a];
+    for (let i = b.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [b[i],b[j]] = [b[j],b[i]];
+    }
+    return b;
+}
+
+function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+    questions = shuffle(QS);
+    idx = 0; correct = 0;
+    show('quizScreen');
+    render();
+}
+
+function render() {
+    const q = questions[idx];
+    const total = questions.length;
+    const cat = CAT[q.cat];
+
+    document.getElementById('qCounter').textContent = `Frage ${idx+1} / ${total}`;
+    document.getElementById('cCounter').textContent  = `✅ ${correct} richtig`;
+    document.getElementById('progFill').style.width  = `${(idx/total)*100}%`;
+
+    const pill = document.getElementById('catPill');
+    pill.textContent = `${cat.emoji} ${q.cat}`;
+    pill.style.background = cat.bg;
+    pill.style.borderColor = cat.border;
+    pill.style.color = cat.color;
+
+    document.getElementById('qText').textContent = q.q;
+
+    const div = document.getElementById('answersDiv');
+    div.innerHTML = '';
+    q.a.forEach((ans, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.innerHTML = `<span class="ans-letter">${String.fromCharCode(65+i)}</span><span class="ans-text">${ans}</span><span class="ans-icon"></span>`;
+        btn.onclick = () => pick(i);
+        div.appendChild(btn);
+    });
+
+    document.getElementById('fbBox').className = 'feedback-box';
+    document.getElementById('nextBtn').className = 'btn-next';
+}
+
+function pick(sel) {
+    const q = questions[idx];
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(b => b.disabled = true);
+
+    const ok = sel === q.c;
+    if (ok) correct++;
+
+    btns.forEach((b, i) => {
+        if (i === q.c)              { b.classList.add('a-correct'); b.querySelector('.ans-icon').textContent = '✅'; }
+        else if (i === sel && !ok)  { b.classList.add('a-wrong');   b.querySelector('.ans-icon').textContent = '❌'; }
+        else                        { b.classList.add('a-dimmed'); }
+    });
+
+    document.getElementById('cCounter').textContent = `✅ ${correct} richtig`;
+
+    const fb = document.getElementById('fbBox');
+    const title = document.getElementById('fbTitle');
+    if (ok) {
+        fb.className = 'feedback-box show fb-correct';
+        title.innerHTML = '✅ Richtig!';
+        title.style.color = '#15803d';
+    } else {
+        fb.className = 'feedback-box show fb-wrong';
+        title.innerHTML = `❌ Falsch! Richtig: <strong>${q.a[q.c]}</strong>`;
+        title.style.color = '#b91c1c';
+    }
+    document.getElementById('fbFact').textContent = q.f;
+
+    const nb = document.getElementById('nextBtn');
+    nb.className = 'btn-next show';
+    document.getElementById('nextTxt').textContent = (idx+1 >= questions.length) ? '🏆 Ergebnis sehen!' : 'Weiter ➜';
+}
+
+function nextQ() {
+    idx++;
+    if (idx >= questions.length) {
+        const total = questions.length;
+        const pct = Math.round((correct/total)*100);
+        let icon,title,msg;
+        if (pct>=90){icon='🏆';title='Klassenbester!';msg='Wow Ella – du hast das fast komplett gerockt!';}
+        else if(pct>=70){icon='⭐';title='Sehr gut!';msg='Stark gemacht! Du hast richtig viel gelernt.';}
+        else if(pct>=50){icon='👍';title='Gut gemacht!';msg='Schon mehr als die Hälfte – weiter so!';}
+        else if(pct>=30){icon='📚';title='Weitermachen!';msg='Nicht aufgeben – das wird mit jedem Mal besser!';}
+        else{icon='💪';title='Bleib dran!';msg='Probier es einfach nochmal – Übung macht den Meister!';}
+        document.getElementById('rIcon').textContent  = icon;
+        document.getElementById('rTitle').textContent = title;
+        document.getElementById('rMsg').textContent   = msg;
+        document.getElementById('rScore').textContent = `${correct}/${total}`;
+        document.getElementById('rPct').textContent   = `${pct}% richtig`;
+        show('resultsScreen');
+        setTimeout(() => { document.getElementById('rFill').style.width = `${pct}%`; }, 100);
+    } else {
+        render();
+    }
+}
+</script>
+</body>
+</html>
