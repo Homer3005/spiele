@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" href="manifest.json">
+    <title>🧬 Biologie-Quest</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(160deg, #0f766e 0%, #14b8a6 45%, #84cc16 100%);
+            color: #1a1a1a;
+        }
+        .screen { display: none; }
+        .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px 16px; }
+        .card {
+            background: white; border-radius: 28px; padding: 32px 24px;
+            max-width: 460px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25); text-align: center;
+        }
+        h1 { font-size: 28px; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
+        .subtitle { color: #6b7280; font-size: 14px; margin-bottom: 20px; line-height: 1.4; }
+
+        /* XP / Streak global header */
+        .stats-bar { display:flex; gap:8px; margin-bottom:18px; }
+        .stat-pill {
+            flex:1; background:#f0fdfa; border:1px solid #99f6e4; border-radius:14px;
+            padding:8px 6px; text-align:center;
+        }
+        .stat-num { font-size:18px; font-weight:900; color:#0f766e; line-height:1; }
+        .stat-lbl { font-size:10px; font-weight:700; color:#0d9488; margin-top:3px; }
+
+        /* Module selection */
+        .modules-grid { display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:18px; }
+        .mod-card {
+            display:flex; align-items:center; gap:14px;
+            background:#f9fafb; border:2px solid #e5e7eb; border-radius:18px;
+            padding:14px 16px; cursor:pointer; text-align:left;
+            font-family:inherit; transition:transform 0.1s, border-color 0.15s;
+        }
+        .mod-card:active { transform:scale(0.98); }
+        .mod-emoji { font-size:28px; flex-shrink:0; }
+        .mod-info { flex:1; }
+        .mod-name { font-size:15px; font-weight:800; color:#0f172a; }
+        .mod-meta { font-size:11px; color:#9ca3af; font-weight:600; margin-top:2px; }
+        .mod-prog { font-size:12px; font-weight:800; flex-shrink:0; padding:4px 8px; border-radius:99px; }
+        .mp-todo { background:#e5e7eb; color:#6b7280; }
+        .mp-mid  { background:#fef9c3; color:#a16207; }
+        .mp-done { background:#dcfce7; color:#15803d; }
+
+        .btn-primary {
+            width: 100%; background: linear-gradient(90deg,#0d9488,#14b8a6);
+            color: white; font-size: 17px; font-weight: 800; padding: 16px;
+            border: none; border-radius: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-family: inherit; transition: transform 0.1s; margin-bottom: 10px;
+        }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-back {
+            width: 100%; background: transparent;
+            color: #6b7280; font-size: 14px; font-weight: 700; padding: 10px;
+            border: none; border-radius: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: inherit;
+        }
+
+        /* Quiz Screen */
+        #quizScreen { align-items: stretch; padding: 16px; justify-content: flex-start; padding-top: 28px; }
+        #quizScreen .inner { max-width: 480px; margin: 0 auto; width: 100%; }
+        .prog-top { display:flex; justify-content:space-between; color:white; font-size:13px; font-weight:700; margin-bottom:8px; }
+        .prog-track { width:100%; height:8px; background:rgba(255,255,255,0.3); border-radius:99px; overflow:hidden; margin-bottom:16px; }
+        .prog-fill { height:8px; background:white; border-radius:99px; transition:width 0.4s ease; }
+        .quiz-card { background:white; border-radius:24px; padding:24px; box-shadow:0 16px 48px rgba(0,0,0,0.2); }
+        .cat-pill {
+            display:inline-flex; align-items:center; gap:6px;
+            border-radius:99px; padding:4px 12px; font-size:11px; font-weight:800;
+            background:#f0fdfa; border:1px solid #99f6e4; color:#0f766e; margin-bottom:16px;
+        }
+        .question-text { font-size:17px; font-weight:800; color:#0f172a; line-height:1.4; margin-bottom:20px; }
+        .answers { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+        .answer-btn {
+            width:100%; background:#f9fafb; border:2px solid #e5e7eb; border-radius:14px;
+            padding:14px 16px; display:flex; align-items:center; gap:12px;
+            cursor:pointer; text-align:left; font-family:inherit;
+            transition:border-color 0.15s, background 0.15s, transform 0.1s;
+        }
+        .answer-btn:active:not(:disabled) { transform:scale(0.98); }
+        .answer-btn:disabled { cursor:default; }
+        .answer-btn.a-correct { background:#dcfce7 !important; border-color:#22c55e !important; }
+        .answer-btn.a-wrong   { background:#fee2e2 !important; border-color:#ef4444 !important; }
+        .answer-btn.a-dimmed  { opacity:0.4; }
+        .ans-letter {
+            width:28px; height:28px; border-radius:50%; background:#e5e7eb;
+            display:flex; align-items:center; justify-content:center;
+            font-size:12px; font-weight:800; color:#374151; flex-shrink:0;
+        }
+        .ans-text { flex:1; font-size:14px; font-weight:600; color:#1a1a1a; line-height:1.3; }
+        .ans-icon { font-size:18px; flex-shrink:0; min-width:20px; }
+        .feedback-box {
+            border-radius:14px; padding:14px; margin-bottom:16px; border:1px solid;
+            display:none; animation:fadeUp 0.25s ease;
+        }
+        .feedback-box.show { display:block; }
+        .fb-correct { background:#f0fdf4; border-color:#86efac; }
+        .fb-wrong   { background:#fef2f2; border-color:#fca5a5; }
+        .fb-title { font-size:14px; font-weight:800; margin-bottom:8px; }
+        .fb-fact  { font-size:13px; color:#374151; line-height:1.5; }
+        .btn-next {
+            width:100%; background:linear-gradient(90deg,#0d9488,#14b8a6);
+            color:white; font-size:15px; font-weight:800; padding:14px;
+            border:none; border-radius:14px; cursor:pointer;
+            display:none; align-items:center; justify-content:center; gap:6px;
+            font-family:inherit; animation:fadeUp 0.25s ease;
+        }
+        .btn-next.show { display:flex; }
+        .btn-next:active { transform:scale(0.97); }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Results */
+        .result-icon  { font-size:64px; margin-bottom:12px; }
+        .result-title { font-size:26px; font-weight:900; color:#0f172a; margin-bottom:6px; }
+        .result-msg   { color:#6b7280; font-size:14px; margin-bottom:24px; }
+        .result-score { font-size:56px; font-weight:900; color:#0d9488; line-height:1; margin-bottom:4px; }
+        .result-pct   { font-size:22px; font-weight:800; color:#9ca3af; margin-bottom:20px; }
+        .result-track { width:100%; height:14px; background:#e5e7eb; border-radius:99px; overflow:hidden; margin-bottom:24px; }
+        .result-fill  { height:14px; background:linear-gradient(90deg,#0d9488,#84cc16); border-radius:99px; transition:width 1.2s cubic-bezier(0.22,1,0.36,1); }
+        .xp-gain { font-size:14px; font-weight:800; color:#0d9488; margin-bottom:16px; }
+
+        /* Confetti */
+        .confetti { position:fixed; top:-10px; width:10px; height:14px; z-index:999; pointer-events:none; will-change:transform; }
+    </style>
+</head>
+<body>
+
+<!-- Welcome -->
+<div id="welcomeScreen" class="screen active">
+    <div class="card">
+        <div style="font-size:54px;margin-bottom:8px;">🧬</div>
+        <h1>Biologie-Quest</h1>
+        <p class="subtitle">Sinne, Ohr, Ernährung &amp; Reiz–Reaktion.<br>Lerne in Themen-Blöcken – jede Runde neu gemischt!</p>
+        <div class="stats-bar">
+            <div class="stat-pill"><div class="stat-num" id="wXp">0</div><div class="stat-lbl">XP</div></div>
+            <div class="stat-pill"><div class="stat-num" id="wStreak">0</div><div class="stat-lbl">Tage-Streak</div></div>
+            <div class="stat-pill"><div class="stat-num" id="wDone">0/6</div><div class="stat-lbl">Module 100%</div></div>
+        </div>
+        <button class="btn-primary" onclick="goModules()">Module wählen 🚀</button>
+        <button class="btn-back" onclick="window.location.href='index.html'">← Zurück zur Übersicht</button>
+    </div>
+</div>
+
+<!-- Module selection -->
+<div id="modulesScreen" class="screen">
+    <div class="card">
+        <h1 style="font-size:22px;">Wähle ein Modul</h1>
+        <p class="subtitle">Jedes Modul ist ein eigener Themen-Block.</p>
+        <div class="modules-grid" id="modGrid"></div>
+        <button class="btn-back" onclick="show('welcomeScreen')">← Zurück</button>
+    </div>
+</div>
+
+<!-- Quiz -->
+<div id="quizScreen" class="screen">
+    <div class="inner">
+        <div class="prog-top">
+            <span id="qCounter">Frage 1 / 8</span>
+            <span id="cCounter">✅ 0 richtig</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+        <div class="quiz-card">
+            <div class="cat-pill" id="catPill"></div>
+            <div class="question-text" id="qText"></div>
+            <div class="answers" id="answersDiv"></div>
+            <div class="feedback-box" id="fbBox">
+                <div class="fb-title" id="fbTitle"></div>
+                <div class="fb-fact"  id="fbFact"></div>
+            </div>
+            <button class="btn-next" id="nextBtn" onclick="nextQ()">
+                <span id="nextTxt">Weiter ➜</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Results -->
+<div id="resultsScreen" class="screen">
+    <div class="card">
+        <div class="result-icon"  id="rIcon"></div>
+        <div class="result-title" id="rTitle"></div>
+        <div class="result-msg"   id="rMsg"></div>
+        <div class="result-score" id="rScore"></div>
+        <div class="result-pct"   id="rPct"></div>
+        <div class="result-track"><div class="result-fill" id="rFill" style="width:0%"></div></div>
+        <div class="xp-gain" id="rXp"></div>
+        <button class="btn-primary" onclick="restartModule()">🔄 Modul nochmal</button>
+        <button class="btn-back" onclick="goModules()">← Andere Module</button>
+    </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+/* ---------- Persistenz (XP, Streak, Modul-Bestwerte) ---------- */
+const SAVE_KEY = 'biologie-quest-v1';
+function loadSave() {
+    try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; }
+    catch (e) { return {}; }
+}
+function writeSave(s) {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) {}
+}
+let save = loadSave();
+if (!save.xp) save.xp = 0;
+if (!save.best) save.best = {};       // best[modId] = bester Score in %
+if (!save.streak) save.streak = 0;
+if (!save.lastPlay) save.lastPlay = null;
+
+function updateStreak() {
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (save.lastPlay === today) { /* schon heute gespielt */ }
+    else if (save.lastPlay === yesterday) { save.streak += 1; save.lastPlay = today; }
+    else { save.streak = 1; save.lastPlay = today; }
+    writeSave(save);
+}
+
+/* ---------- Module & Fragen (Daten inline – keine externen Quellen) ---------- */
+/* Konvention: optionen[0] ist die richtige Antwort. Gemischt wird zur ANZEIGEZEIT. */
+const MODULE = [
+  { id:"naehr", emoji:"🍔", name:"Nährstoffe", fragen:[
+      { q:"Was sind Kohlenhydrate für unseren Körper?", a:["Die wichtigste Energiequelle","Ein Baustoff für Muskeln","Ein Schutz für die Organe","Ein Vitaminspeicher"], f:"Kohlenhydrate sind die wichtigste Energiequelle. Sie liefern dem Körper schnell verfügbaren Brennstoff." },
+      { q:"Welche Kohlenhydrate liefern schnell und kurzfristig Energie?", a:["Schnelle Kohlenhydrate (z. B. Zucker)","Langsame Kohlenhydrate (z. B. Vollkorn)","Gesättigte Fette","Proteine"], f:"Schnelle Kohlenhydrate wie Zucker geben kurzfristig Energie, halten aber nicht lange satt." },
+      { q:"Welche Kohlenhydrate versorgen den Körper längerfristig?", a:["Langsame Kohlenhydrate (z. B. Vollkornprodukte)","Schnelle Kohlenhydrate (z. B. Zucker)","Ungesättigte Fette","Wasser"], f:"Langsame Kohlenhydrate, z. B. in Vollkornprodukten, versorgen den Körper über längere Zeit mit Energie." },
+      { q:"Welches Lebensmittel enthält besonders viele Kohlenhydrate?", a:["Kartoffeln","Fisch","Eier","Hähnchenbrust"], f:"Viele Kohlenhydrate stecken in Getreideprodukten, Kartoffeln und Hülsenfrüchten." },
+      { q:"Wofür sind Proteine vor allem wichtig?", a:["Für den Aufbau des Körpers","Als wichtigste Energiequelle","Zum Schutz vor Kälte","Für die Vitaminspeicherung"], f:"Proteine sind Baustoffe – besonders für Muskeln, Haut und Wachstum." },
+      { q:"Welches ist ein proteinreiches Lebensmittel?", a:["Magerquark","Butter","Zucker","Pflanzenöl"], f:"Proteinreich sind z. B. Hähnchenbrust, Kichererbsen, Magerquark und Tofu – tierisch und pflanzlich." },
+      { q:"Welche Aufgabe haben Proteine im Stoffwechsel?", a:["Sie regulieren und ermöglichen Stoffwechselvorgänge","Sie speichern Energie für den Winter","Sie schützen die Organe vor Stößen","Sie färben das Blut rot"], f:"Proteine regulieren und ermöglichen alle Stoffwechselvorgänge im Körper." },
+      { q:"Welche Hauptaufgabe haben Fette?", a:["Energie liefern und als Energiespeicher dienen","Den Körper mit Sauerstoff versorgen","Knochen härter machen","Die Haut bräunen"], f:"Fette liefern Energie und dienen als Energiespeicher des Körpers." },
+      { q:"Welche weitere Funktion haben Fette?", a:["Sie schützen die Organe und helfen bei der Vitaminaufnahme","Sie zerstören Krankheitserreger","Sie bilden neue Muskeln","Sie kühlen das Blut ab"], f:"Fette schützen unsere Organe und helfen dem Körper, bestimmte Vitamine aufzunehmen." },
+      { q:"Welche Fette gelten als die gesünderen?", a:["Ungesättigte Fette","Gesättigte Fette","Tierische Fette aus Butter","Fett aus Palmöl"], f:"Ungesättigte Fette (gesunde Fette) stecken z. B. in pflanzlichen Ölen, Avocados und Nüssen." },
+      { q:"Welches Lebensmittel enthält vor allem gesättigte (weniger gesunde) Fette?", a:["Butter","Avocado","Walnüsse","Olivenöl"], f:"Gesättigte Fette finden sich z. B. in Butter, Käse, Sahne und Palmöl." },
+  ]},
+  { id:"sinne", emoji:"👁️", name:"Sinne & Sinnesorgane", fragen:[
+      { q:"Was ist die Hauptaufgabe der Sinnesorgane?", a:["Reize aus der Umwelt aufnehmen","Energie speichern","Blut pumpen","Nahrung verdauen"], f:"Sinnesorgane nehmen Reize auf und leiten sie als Information weiter." },
+      { q:"Wie viele klassische Sinne hat der Mensch?", a:["5","2","8","3"], f:"Die fünf klassischen Sinne sind: Sehen, Hören, Riechen, Schmecken und Tasten." },
+      { q:"Welches Sinnesorgan gehört zum Sehen?", a:["Das Auge","Das Ohr","Die Nase","Die Zunge"], f:"Mit dem Auge nehmen wir Licht wahr – der Sehsinn." },
+      { q:"Welches Sinnesorgan gehört zum Hören?", a:["Das Ohr","Das Auge","Die Haut","Die Nase"], f:"Mit dem Ohr nehmen wir Schall wahr – der Hörsinn." },
+      { q:"Welches Sinnesorgan gehört zum Riechen?", a:["Die Nase","Die Zunge","Das Ohr","Die Haut"], f:"Mit der Nase nehmen wir Gerüche wahr – der Geruchssinn." },
+      { q:"Welches Sinnesorgan gehört zum Schmecken?", a:["Die Zunge","Die Nase","Das Auge","Die Haut"], f:"Mit der Zunge schmecken wir süß, sauer, salzig, bitter und umami." },
+      { q:"Mit welchem Organ nehmen wir Tasten, Druck und Temperatur wahr?", a:["Mit der Haut","Mit dem Ohr","Mit der Zunge","Mit dem Auge"], f:"Die Haut ist unser größtes Sinnesorgan – sie spürt Berührung, Druck, Wärme und Kälte." },
+      { q:"Welcher Sinn warnt uns oft zuerst vor verdorbenem Essen?", a:["Der Geruchssinn","Der Hörsinn","Der Tastsinn","Der Gleichgewichtssinn"], f:"Riechen (und Schmecken) warnt uns häufig vor verdorbener Nahrung, bevor wir sie essen." },
+  ]},
+  { id:"aufbau", emoji:"👂", name:"Aufbau des Ohrs", fragen:[
+      { q:"Welcher Teil des Ohrs wirkt wie ein Schalltrichter?", a:["Die Ohrmuschel","Das Trommelfell","Die Hörschnecke","Der Hörnerv"], f:"Die Ohrmuschel fängt den Schall auf, der sich in der Luft ausbreitet." },
+      { q:"Wodurch wird der aufgefangene Schall bis zum Trommelfell geleitet?", a:["Durch den Gehörgang","Durch den Hörnerv","Durch die Hörschnecke","Durch den Steigbügel"], f:"Der Gehörgang leitet den Schall von der Ohrmuschel bis zum Trommelfell." },
+      { q:"Was gerät ins Schwingen, wenn der Schall darauf trifft?", a:["Das Trommelfell","Die Ohrmuschel","Der Hörnerv","Das Gehirn"], f:"Trifft Schall auf das Trommelfell, gerät es ins Schwingen." },
+      { q:"Wie heißen die drei Gehörknöchelchen?", a:["Hammer, Amboss, Steigbügel","Hammer, Zange, Säge","Trommel, Schnecke, Nerv","Hammer, Amboss, Schraube"], f:"Die drei Gehörknöchelchen sind Hammer, Amboss und Steigbügel." },
+      { q:"Welche Aufgabe haben die Gehörknöchelchen?", a:["Sie verstärken die Schwingungen","Sie fangen den Schall auf","Sie melden Töne ans Gehirn","Sie erzeugen den Schall"], f:"Hammer, Amboss und Steigbügel verstärken die winzigen Bewegungen des Trommelfells." },
+      { q:"Wie wird die Hörschnecke auch genannt?", a:["Cochlea","Cornea","Trommel","Aorta"], f:"Die Hörschnecke heißt mit Fachbegriff Cochlea. In ihr werden die Schwingungen verarbeitet." },
+      { q:"Was leitet die wahrgenommenen Töne von der Schnecke zum Gehirn?", a:["Der Hörnerv","Das Trommelfell","Die Ohrmuschel","Der Steigbügel"], f:"Der Hörnerv meldet die in der Schnecke wahrgenommenen Töne an das Gehirn weiter." },
+      { q:"In welchem der drei Ohrbereiche liegt die Hörschnecke?", a:["Im Innenohr","Im Außenohr","Im Mittelohr","In der Ohrmuschel"], f:"Das Ohr besteht aus Außenohr, Mittelohr und Innenohr – die Hörschnecke liegt im Innenohr." },
+  ]},
+  { id:"schall", emoji:"🔊", name:"Hören, Schall & Frequenz", fragen:[
+      { q:"Wie entsteht Schall?", a:["Wenn etwas schwingt und dabei die Luft bewegt","Wenn Licht auf das Auge trifft","Wenn das Gehirn einen Befehl gibt","Wenn sich die Haut erwärmt"], f:"Schall entsteht, wenn etwas schwingt und dabei die Luft in Bewegung versetzt." },
+      { q:"Was gibt die Frequenz an?", a:["Die Anzahl der Schwingungen pro Sekunde","Wie laut ein Ton ist","Wie weit der Schall reist","Die Temperatur der Luft"], f:"Die Frequenz gibt an, wie oft eine Schallwelle pro Sekunde schwingt." },
+      { q:"In welcher Einheit wird die Frequenz gemessen?", a:["Hertz (Hz)","Dezibel (dB)","Meter (m)","Grad (°C)"], f:"Die Frequenz wird in Hertz (Hz) gemessen." },
+      { q:"Je schneller die Schallwellen schwingen, desto …", a:["höher ist der Ton","leiser ist der Ton","tiefer ist der Ton","wärmer ist der Ton"], f:"Je schneller die Schallwellen schwingen, desto höher klingt der Ton." },
+      { q:"Welchen Frequenzbereich kann das menschliche Gehör etwa wahrnehmen?", a:["20 bis 20.000 Hz","0 bis 100 Hz","1 bis 50 Hz","500 bis 1.000 Hz"], f:"Der Mensch hört Schallwellen mit etwa 20 bis 20.000 Hz." },
+      { q:"Welche Töne kann man mit zunehmendem Alter meist zuerst nicht mehr hören?", a:["Hohe Töne","Tiefe Töne","Laute Töne","Leise tiefe Töne"], f:"Im Alter verliert man meist zuerst die Fähigkeit, Töne im hohen Frequenzbereich zu hören." },
+      { q:"In welcher Einheit wird die Lautstärke gemessen?", a:["Dezibel (dB)","Hertz (Hz)","Watt (W)","Liter (l)"], f:"Die Lautstärke wird in Dezibel (dB) gemessen." },
+      { q:"Wie laut ist eine normale Gesprächslautstärke etwa?", a:["40 bis 60 dB","5 bis 10 dB","100 bis 120 dB","150 bis 180 dB"], f:"Eine normale Gesprächslautstärke liegt bei etwa 40 bis 60 dB." },
+      { q:"Ab welcher Lautstärke kann länger anhaltender Lärm das Gehör schädigen?", a:["Ab etwa 80 dB","Ab etwa 20 dB","Ab etwa 200 dB","Ab etwa 5 dB"], f:"Schon länger anhaltender Lärm ab etwa 80 dB kann das Gehör schädigen." },
+      { q:"Wo liegt die Schmerzgrenze des menschlichen Gehörs ungefähr?", a:["Bei etwa 120 dB","Bei etwa 40 dB","Bei etwa 1.000 dB","Bei etwa 60 dB"], f:"Die Schmerzgrenze liegt bei etwa 120 dB – z. B. ein Düsenflugzeug aus der Nähe." },
+  ]},
+  { id:"cochlea", emoji:"🦻", name:"Cochlea-Implantat & Hörschäden", fragen:[
+      { q:"Was ist ein Cochlea-Implantat?", a:["Ein Hörimplantat, das Höreindrücke ermöglicht","Eine Brille fürs Ohr","Ein Gerät zum Lautermachen von Musik","Ein Pflaster gegen Ohrenschmerzen"], f:"Ein Cochlea-Implantat ist ein Hörimplantat, das gehörlosen oder stark schwerhörigen Menschen Höreindrücke ermöglicht." },
+      { q:"Welchen Teil des Ohrs ersetzt das Cochlea-Implantat in seiner Funktion?", a:["Die Hörschnecke (Cochlea)","Die Ohrmuschel","Das Trommelfell","Den Gehörgang"], f:"Das Implantat übernimmt die Aufgabe der geschädigten Hörschnecke und reizt direkt den Hörnerv." },
+      { q:"Was kann das Gehör dauerhaft schädigen?", a:["Lang anhaltender lauter Lärm","Leise Musik","Frische Luft","Ruhe und Stille"], f:"Vor allem lang anhaltender lauter Lärm kann die feinen Sinneszellen im Innenohr schädigen." },
+      { q:"Wie kann man Hörschäden am besten vorbeugen?", a:["Laute Umgebungen meiden","Möglichst laute Musik hören","Nie Gehörschutz tragen","Die Ohren ständig belasten"], f:"Laute Umgebungen zu meiden ist eine der wichtigsten Maßnahmen zum Schutz des Gehörs." },
+      { q:"Was sollte man beim Musikhören mit Kopfhörern beachten?", a:["Nicht zu laut hören","So laut wie möglich hören","Beide Ohren gleichzeitig zuhalten","Nur nachts hören"], f:"Musik – vor allem über Kopfhörer – sollte nicht zu laut gehört werden." },
+      { q:"Was hilft bei lauten Veranstaltungen oder Arbeiten, das Gehör zu schützen?", a:["Einen Gehörschutz tragen","Lauter mitsingen","Näher an die Box gehen","Die Ohren reiben"], f:"Bei lauten Veranstaltungen oder Arbeiten schützt ein Gehörschutz das Ohr." },
+      { q:"Warum sollte man den Ohren auch mal Pausen gönnen?", a:["Damit sich das Gehör erholen kann","Damit die Ohren wachsen","Damit man besser riecht","Damit das Trommelfell verschwindet"], f:"Pausen geben dem Gehör Zeit, sich von der Belastung zu erholen." },
+      { q:"Was passiert bei zu starkem Lärm im Innenohr?", a:["Feine Sinneszellen werden geschädigt","Das Trommelfell wird größer","Die Ohrmuschel fällt ab","Der Gehörgang wird länger"], f:"Zu lauter Lärm schädigt die empfindlichen Sinneszellen (Haarzellen) im Innenohr – das kann dauerhaft bleiben." },
+  ]},
+  { id:"reiz", emoji:"⚡", name:"Vom Reiz zur Reaktion", fragen:[
+      { q:"Wovon wird ein Reiz zuerst aufgenommen?", a:["Von einem Sinnesorgan","Von einem Muskel","Vom Gehirn","Von der Reaktion"], f:"Ein Reiz wird zuerst von einem Sinnesorgan aufgenommen." },
+      { q:"Worüber wird die Information zum Gehirn geleitet?", a:["Über einen Nerv","Über einen Muskel","Über das Blut","Über die Haut"], f:"Die Information wird über einen Nerv zum Gehirn geleitet." },
+      { q:"Was verarbeitet die aufgenommene Information?", a:["Das Gehirn","Der Muskel","Das Sinnesorgan","Der Knochen"], f:"Das Gehirn verarbeitet die Information und entscheidet, was zu tun ist." },
+      { q:"An welchen Teil des Körpers sendet das Gehirn dann einen Befehl?", a:["An einen Muskel","An ein Sinnesorgan","An den Reiz","An die Nase"], f:"Das Gehirn sendet einen Befehl an einen Muskel." },
+      { q:"Was entsteht ganz am Ende der Kette?", a:["Eine Reaktion","Ein neuer Reiz","Ein Sinnesorgan","Ein Nerv"], f:"Durch den Befehl an den Muskel entsteht eine Reaktion." },
+      { q:"Welche Reihenfolge ist richtig?", a:["Reiz → Sinnesorgan → Nerv → Gehirn → Muskel → Reaktion","Reiz → Muskel → Gehirn → Nerv → Reaktion","Reiz → Gehirn → Sinnesorgan → Muskel → Reaktion","Reiz → Nerv → Muskel → Gehirn → Reaktion"], f:"Der Weg lautet: Reiz → Sinnesorgan → Nerv → Gehirn → Nerv → Muskel → Reaktion." },
+      { q:"Du fasst eine heiße Herdplatte an. Was ist hier der Reiz?", a:["Die Hitze der Herdplatte","Das Zurückziehen der Hand","Der Nerv im Arm","Das Gehirn"], f:"Die heiße Herdplatte (die Hitze) ist der Reiz. Die Haut nimmt sie wahr." },
+      { q:"Du ziehst die Hand schnell zurück. Was ist das?", a:["Die Reaktion","Der Reiz","Das Sinnesorgan","Der Nerv"], f:"Das Zurückziehen der Hand ist die Reaktion auf den Reiz." },
+      { q:"Welche Aufgabe haben die Nerven?", a:["Sie leiten Informationen weiter","Sie nehmen Reize auf","Sie verarbeiten Informationen","Sie bewegen sich selbst"], f:"Nerven leiten Informationen weiter – zum Gehirn hin und als Befehl wieder zurück zu den Muskeln." },
+  ]},
+];
+
+/* ---------- Spiel-Logik ---------- */
+let activeMod = null, questions = [], idx = 0, correct = 0;
+
+/* Fisher-Yates auf Index-Array */
+function shuffleIndices(n) {
+    const a = Array.from({length:n}, (_, i) => i);
+    for (let i = a.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+}
+
+/* PFLICHT-Shuffle der Antwort-Positionen (Lessons Learned: nie immer A!) */
+function prepareQuestion(q) {
+    const order = shuffleIndices(q.a.length);   // q.a[0] ist per Konvention richtig
+    return {
+        q: q.q,
+        f: q.f,
+        a: order.map(i => q.a[i]),
+        c: order.indexOf(0)                       // neue Position der richtigen Antwort
+    };
+}
+
+function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+}
+
+function refreshWelcomeStats() {
+    document.getElementById('wXp').textContent = save.xp;
+    document.getElementById('wStreak').textContent = save.streak;
+    const done = MODULE.filter(m => (save.best[m.id]||0) >= 100).length;
+    document.getElementById('wDone').textContent = `${done}/${MODULE.length}`;
+}
+
+function goModules() {
+    const grid = document.getElementById('modGrid');
+    grid.innerHTML = '';
+    MODULE.forEach(m => {
+        const best = save.best[m.id] || 0;
+        let cls = 'mp-todo', label = 'Neu';
+        if (best >= 100) { cls = 'mp-done'; label = '100% ✓'; }
+        else if (best > 0) { cls = 'mp-mid'; label = best + '%'; }
+        const card = document.createElement('button');
+        card.className = 'mod-card';
+        card.onclick = () => startModule(m.id);
+        card.innerHTML =
+            `<span class="mod-emoji">${m.emoji}</span>` +
+            `<span class="mod-info"><span class="mod-name">${m.name}</span>` +
+            `<span class="mod-meta">${m.fragen.length} Fragen</span></span>` +
+            `<span class="mod-prog ${cls}">${label}</span>`;
+        grid.appendChild(card);
+    });
+    show('modulesScreen');
+}
+
+function startModule(modId) {
+    activeMod = MODULE.find(m => m.id === modId);
+    const order = shuffleIndices(activeMod.fragen.length);   // Frage-Reihenfolge mischen
+    questions = order.map(i => prepareQuestion(activeMod.fragen[i]));  // + Antworten mischen
+    idx = 0; correct = 0;
+    show('quizScreen');
+    render();
+}
+
+function restartModule() { if (activeMod) startModule(activeMod.id); }
+
+function render() {
+    const q = questions[idx];
+    const total = questions.length;
+
+    document.getElementById('qCounter').textContent = `Frage ${idx+1} / ${total}`;
+    document.getElementById('cCounter').textContent  = `✅ ${correct} richtig`;
+    document.getElementById('progFill').style.width  = `${(idx/total)*100}%`;
+
+    document.getElementById('catPill').textContent = `${activeMod.emoji} ${activeMod.name}`;
+    document.getElementById('qText').textContent = q.q;
+
+    const div = document.getElementById('answersDiv');
+    div.innerHTML = '';
+    q.a.forEach((ans, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn';
+        btn.innerHTML = `<span class="ans-letter">${String.fromCharCode(65+i)}</span><span class="ans-text">${ans}</span><span class="ans-icon"></span>`;
+        btn.onclick = () => pick(i);
+        div.appendChild(btn);
+    });
+
+    document.getElementById('fbBox').className = 'feedback-box';
+    document.getElementById('nextBtn').className = 'btn-next';
+}
+
+function pick(sel) {
+    const q = questions[idx];
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(b => b.disabled = true);
+
+    const ok = sel === q.c;
+    if (ok) correct++;
+
+    btns.forEach((b, i) => {
+        if (i === q.c)             { b.classList.add('a-correct'); b.querySelector('.ans-icon').textContent = '✅'; }
+        else if (i === sel && !ok) { b.classList.add('a-wrong');   b.querySelector('.ans-icon').textContent = '❌'; }
+        else                       { b.classList.add('a-dimmed'); }
+    });
+
+    document.getElementById('cCounter').textContent = `✅ ${correct} richtig`;
+
+    const fb = document.getElementById('fbBox');
+    const title = document.getElementById('fbTitle');
+    if (ok) {
+        fb.className = 'feedback-box show fb-correct';
+        title.innerHTML = '✅ Richtig!';
+        title.style.color = '#15803d';
+    } else {
+        fb.className = 'feedback-box show fb-wrong';
+        title.innerHTML = `❌ Falsch! Richtig: <strong>${q.a[q.c]}</strong>`;
+        title.style.color = '#b91c1c';
+    }
+    document.getElementById('fbFact').textContent = q.f;
+
+    const nb = document.getElementById('nextBtn');
+    nb.className = 'btn-next show';
+    document.getElementById('nextTxt').textContent = (idx+1 >= questions.length) ? '🏆 Ergebnis sehen!' : 'Weiter ➜';
+}
+
+function nextQ() {
+    idx++;
+    if (idx >= questions.length) { finish(); }
+    else { render(); }
+}
+
+function finish() {
+    const total = questions.length;
+    const pct = Math.round((correct/total)*100);
+
+    // XP: 10 pro richtige Antwort + 50 Bonus bei 100%
+    const gained = correct*10 + (pct >= 100 ? 50 : 0);
+    save.xp += gained;
+    if (pct > (save.best[activeMod.id]||0)) save.best[activeMod.id] = pct;
+    updateStreak();   // schreibt save mit
+    writeSave(save);
+    refreshWelcomeStats();
+
+    let icon,title,msg;
+    if (pct>=100){icon='🏆';title='Perfekt!';msg='Alle Fragen richtig – top vorbereitet!';}
+    else if(pct>=80){icon='🌟';title='Super!';msg='Sehr stark! Fast alles sitzt.';}
+    else if(pct>=60){icon='😊';title='Gut gemacht!';msg='Solide – ein paar Wiederholungen und es sitzt.';}
+    else{icon='💪';title='Weiter üben!';msg='Spiel das Modul nochmal – du wirst schnell besser.';}
+
+    document.getElementById('rIcon').textContent  = icon;
+    document.getElementById('rTitle').textContent = title;
+    document.getElementById('rMsg').textContent   = msg;
+    document.getElementById('rScore').textContent = `${correct}/${total}`;
+    document.getElementById('rPct').textContent   = `${pct}% richtig`;
+    document.getElementById('rXp').textContent    = `+${gained} XP`;
+    show('resultsScreen');
+    setTimeout(() => { document.getElementById('rFill').style.width = `${pct}%`; }, 100);
+    if (pct >= 100) confetti();
+}
+
+/* ---------- Konfetti (self-contained) ---------- */
+function confetti() {
+    const colors = ['#0d9488','#14b8a6','#84cc16','#fbbf24','#f97316','#ec4899'];
+    for (let i = 0; i < 80; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random()*100 + 'vw';
+        c.style.background = colors[Math.floor(Math.random()*colors.length)];
+        c.style.transform = `rotate(${Math.random()*360}deg)`;
+        document.body.appendChild(c);
+        const fall = 1200 + Math.random()*1600;
+        const drift = (Math.random()-0.5)*200;
+        c.animate([
+            { transform:`translate(0,0) rotate(0deg)`, opacity:1 },
+            { transform:`translate(${drift}px, ${window.innerHeight+40}px) rotate(${Math.random()*720}deg)`, opacity:1 }
+        ], { duration: fall, easing:'cubic-bezier(0.3,0.6,0.7,1)' });
+        setTimeout(() => c.remove(), fall);
+    }
+}
+
+/* Init */
+refreshWelcomeStats();
+</script>
+</body>
+</html>
