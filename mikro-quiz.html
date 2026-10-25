@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<title>🦠 Mikro-Quest</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(160deg, #1e1b4b 0%, #6d28d9 48%, #db2777 100%);
+    color: #1a1a1a;
+}
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px 16px; }
+.card {
+    background: white; border-radius: 28px; padding: 32px 24px;
+    max-width: 460px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25); text-align: center;
+}
+h1 { font-size: 28px; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
+.subtitle { color: #6b7280; font-size: 14px; margin-bottom: 20px; line-height: 1.4; }
+
+/* XP / Streak */
+.stats-bar { display:flex; gap:8px; margin-bottom:18px; }
+.stat-pill { flex:1; background:#faf5ff; border:1px solid #e9d5ff; border-radius:14px; padding:8px 6px; text-align:center; }
+.stat-num { font-size:18px; font-weight:900; color:#7e22ce; line-height:1; }
+.stat-lbl { font-size:10px; font-weight:700; color:#a855f7; margin-top:3px; }
+
+/* Module */
+.modules-grid { display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:18px; }
+.mod-card {
+    display:flex; align-items:center; gap:14px;
+    background:#f9fafb; border:2px solid #e5e7eb; border-radius:18px;
+    padding:14px 16px; cursor:pointer; text-align:left;
+    font-family:inherit; transition:transform 0.1s, border-color 0.15s;
+}
+.mod-card:active { transform:scale(0.98); }
+.mod-emoji { font-size:28px; flex-shrink:0; }
+.mod-info { flex:1; }
+.mod-name { font-size:15px; font-weight:800; color:#0f172a; display:block; }
+.mod-meta { font-size:11px; color:#9ca3af; font-weight:600; margin-top:2px; display:block; }
+.mod-prog { font-size:12px; font-weight:800; flex-shrink:0; padding:4px 8px; border-radius:99px; }
+.mp-todo { background:#e5e7eb; color:#6b7280; }
+.mp-mid  { background:#fef9c3; color:#a16207; }
+.mp-done { background:#dcfce7; color:#15803d; }
+
+.btn-primary {
+    width: 100%; background: linear-gradient(90deg,#7e22ce,#db2777);
+    color: white; font-size: 17px; font-weight: 800; padding: 16px;
+    border: none; border-radius: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: inherit; transition: transform 0.1s; margin-bottom: 10px;
+}
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity:0.4; }
+.btn-back {
+    width: 100%; background: transparent; color: #6b7280;
+    font-size: 14px; font-weight: 700; padding: 10px;
+    border: none; border-radius: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit;
+}
+
+/* Quiz */
+#quizScreen { align-items: stretch; padding: 16px; justify-content: flex-start; padding-top: 28px; }
+#quizScreen .inner { max-width: 480px; margin: 0 auto; width: 100%; }
+.prog-top { display:flex; justify-content:space-between; color:white; font-size:13px; font-weight:700; margin-bottom:8px; }
+.prog-track { width:100%; height:8px; background:rgba(255,255,255,0.3); border-radius:99px; overflow:hidden; margin-bottom:16px; }
+.prog-fill { height:8px; background:white; border-radius:99px; transition:width 0.4s ease; }
+.quiz-card { background:white; border-radius:24px; padding:24px; box-shadow:0 16px 48px rgba(0,0,0,0.2); }
+.cat-pill {
+    display:inline-flex; align-items:center; gap:6px;
+    border-radius:99px; padding:4px 12px; font-size:11px; font-weight:800;
+    background:#faf5ff; color:#7e22ce; border:1px solid #e9d5ff; margin-bottom:12px;
+}
+.type-pill {
+    display:inline-flex; align-items:center; gap:5px; border-radius:99px;
+    padding:4px 10px; font-size:10px; font-weight:800; margin-bottom:12px; margin-left:6px;
+    background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe;
+}
+.question-text { font-size:19px; font-weight:800; color:#0f172a; line-height:1.4; margin-bottom:18px; }
+.hint-line { font-size:12px; font-weight:700; color:#9ca3af; margin:-10px 0 16px; }
+
+/* Antwort-Buttons (MC / Wahr-Falsch) */
+.answers { display:flex; flex-direction:column; gap:10px; }
+.answer-btn {
+    display:flex; align-items:center; gap:12px; width:100%;
+    background:#f9fafb; border:2px solid #e5e7eb; border-radius:16px;
+    padding:14px 16px; cursor:pointer; text-align:left; font-family:inherit;
+    font-size:15px; font-weight:700; color:#111827; transition:transform 0.1s, border-color 0.15s;
+}
+.answer-btn:active { transform:scale(0.98); }
+.ans-letter {
+    width:28px; height:28px; border-radius:9px; background:#e9d5ff; color:#7e22ce;
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; flex-shrink:0;
+}
+.ans-text { flex:1; line-height:1.3; }
+.ans-icon { font-size:18px; flex-shrink:0; }
+.a-correct { background:#dcfce7; border-color:#22c55e; }
+.a-wrong   { background:#fee2e2; border-color:#ef4444; }
+.a-dimmed  { opacity:0.45; }
+
+/* Zuordnung */
+.match-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.m-chip {
+    width:100%; background:#f9fafb; border:2px solid #e5e7eb; border-radius:14px;
+    padding:12px 10px; font-family:inherit; font-size:13px; font-weight:700; color:#111827;
+    text-align:left; cursor:pointer; line-height:1.25; margin-bottom:8px; transition:transform 0.1s;
+}
+.m-chip:active { transform:scale(0.98); }
+.m-sel { background:#f3e8ff; border-color:#a855f7; }
+.m-ok  { background:#dcfce7; border-color:#22c55e; opacity:0.75; }
+.m-bad { background:#fee2e2; border-color:#ef4444; }
+
+/* Reihenfolge */
+.order-list { display:flex; flex-direction:column; gap:9px; }
+.o-step {
+    display:flex; align-items:center; gap:11px; width:100%;
+    background:#f9fafb; border:2px solid #e5e7eb; border-radius:14px;
+    padding:13px 14px; font-family:inherit; font-size:14px; font-weight:700;
+    color:#111827; text-align:left; cursor:pointer; line-height:1.3; transition:transform 0.1s;
+}
+.o-step:active { transform:scale(0.98); }
+.o-num {
+    width:26px; height:26px; border-radius:99px; flex-shrink:0;
+    background:#e5e7eb; color:#9ca3af;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900;
+}
+.o-picked .o-num { background:#7e22ce; color:white; }
+.o-picked { background:#faf5ff; border-color:#c084fc; }
+.o-ok   { background:#dcfce7; border-color:#22c55e; }
+.o-fail { background:#fee2e2; border-color:#ef4444; }
+.btn-reset {
+    width:100%; background:transparent; border:none; color:#9ca3af;
+    font-family:inherit; font-size:13px; font-weight:700; padding:10px; cursor:pointer;
+}
+
+/* Lückentext */
+.cloze-input {
+    width:100%; border:2px solid #e5e7eb; border-radius:16px; background:#f9fafb;
+    padding:15px 16px; font-family:inherit; font-size:18px; font-weight:800; color:#111827;
+    text-align:center; outline:none;
+}
+.cloze-input:focus { border-color:#a855f7; background:white; }
+.cloze-input.ci-ok   { border-color:#22c55e; background:#dcfce7; }
+.cloze-input.ci-bad  { border-color:#ef4444; background:#fee2e2; }
+.btn-check {
+    width:100%; margin-top:10px; background:#111827; color:white;
+    font-family:inherit; font-size:15px; font-weight:800; padding:14px;
+    border:none; border-radius:14px; cursor:pointer;
+}
+.btn-check:active { transform:scale(0.98); }
+
+/* Feedback */
+.feedback-box { display:none; margin-top:16px; border-radius:16px; padding:14px 16px; text-align:left; }
+.feedback-box.show { display:block; }
+.fb-correct { background:#f0fdf4; border:1px solid #bbf7d0; }
+.fb-wrong   { background:#fef2f2; border:1px solid #fecaca; }
+.fb-title { font-size:15px; font-weight:900; margin-bottom:5px; }
+.fb-fact  { font-size:13.5px; color:#374151; line-height:1.45; font-weight:600; }
+.btn-next {
+    display:none; width:100%; margin-top:14px;
+    background:linear-gradient(90deg,#7e22ce,#db2777); color:white;
+    font-size:16px; font-weight:800; padding:15px; border:none; border-radius:16px;
+    cursor:pointer; font-family:inherit;
+}
+.btn-next.show { display:block; }
+
+/* Ergebnis */
+.result-icon { font-size:64px; margin-bottom:8px; }
+.result-title { font-size:26px; font-weight:900; color:#0f172a; }
+.result-msg { font-size:14px; color:#6b7280; margin:6px 0 18px; font-weight:600; }
+.result-score { font-size:40px; font-weight:900; color:#7e22ce; }
+.result-pct { font-size:14px; color:#6b7280; font-weight:700; margin-bottom:14px; }
+.result-track { width:100%; height:10px; background:#e5e7eb; border-radius:99px; overflow:hidden; margin-bottom:10px; }
+.result-fill { height:10px; background:linear-gradient(90deg,#7e22ce,#db2777); border-radius:99px; width:0; transition:width 0.8s ease; }
+.xp-gain { font-size:15px; font-weight:900; color:#db2777; margin-bottom:18px; }
+.wrong-list { text-align:left; background:#f9fafb; border:1px solid #e5e7eb; border-radius:16px; padding:14px; margin-bottom:16px; }
+.wrong-head { font-size:12px; font-weight:900; color:#6b7280; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+.wrong-item { font-size:13px; font-weight:700; color:#374151; line-height:1.4; margin-bottom:7px; }
+
+.confetti { position:fixed; top:-10px; width:10px; height:10px; border-radius:2px; z-index:999; pointer-events:none; }
+</style>
+</head>
+<body>
+
+<!-- Start -->
+<div id="welcomeScreen" class="screen active">
+    <div class="card">
+        <div style="font-size:60px;margin-bottom:6px;">🦠</div>
+        <h1>Mikro-Quest</h1>
+        <div class="subtitle">Pilze &amp; Bakterien · 8. Klasse<br>7 Module · 5 Aufgabentypen</div>
+        <div class="stats-bar">
+            <div class="stat-pill"><div class="stat-num" id="wXp">0</div><div class="stat-lbl">XP</div></div>
+            <div class="stat-pill"><div class="stat-num" id="wStreak">0</div><div class="stat-lbl">TAGE</div></div>
+            <div class="stat-pill"><div class="stat-num" id="wDone">0/7</div><div class="stat-lbl">MODULE</div></div>
+        </div>
+        <button class="btn-primary" onclick="goModules()">🚀 Los geht's</button>
+    </div>
+</div>
+
+<!-- Module -->
+<div id="modulesScreen" class="screen">
+    <div class="card">
+        <h1>Module</h1>
+        <div class="subtitle">Was willst du üben?</div>
+        <div class="modules-grid" id="modGrid"></div>
+        <button class="btn-primary" onclick="startAll()">🎲 Alles gemischt (30 Fragen)</button>
+        <button class="btn-back" onclick="show('welcomeScreen')">← Zurück</button>
+    </div>
+</div>
+
+<!-- Quiz -->
+<div id="quizScreen" class="screen">
+    <div class="inner">
+        <div class="prog-top">
+            <span id="qCounter">Frage 1 / 8</span>
+            <span id="cCounter">✅ 0 richtig</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+        <div class="quiz-card">
+            <div><span class="cat-pill" id="catPill"></span><span class="type-pill" id="typePill"></span></div>
+            <div class="question-text" id="qText"></div>
+            <div class="hint-line" id="hintLine" style="display:none;"></div>
+            <div id="answerZone"></div>
+            <div class="feedback-box" id="fbBox">
+                <div class="fb-title" id="fbTitle"></div>
+                <div class="fb-fact" id="fbFact"></div>
+            </div>
+            <button class="btn-next" id="nextBtn" onclick="nextQ()"><span id="nextTxt">Weiter ➜</span></button>
+        </div>
+        <button class="btn-back" style="color:rgba(255,255,255,0.85);margin-top:10px;" onclick="goModules()">← Abbrechen</button>
+    </div>
+</div>
+
+<!-- Ergebnis -->
+<div id="resultsScreen" class="screen">
+    <div class="card">
+        <div class="result-icon" id="rIcon"></div>
+        <div class="result-title" id="rTitle"></div>
+        <div class="result-msg" id="rMsg"></div>
+        <div class="result-score" id="rScore"></div>
+        <div class="result-pct" id="rPct"></div>
+        <div class="result-track"><div class="result-fill" id="rFill" style="width:0%"></div></div>
+        <div class="xp-gain" id="rXp"></div>
+        <div class="wrong-list" id="wrongList" style="display:none;">
+            <div class="wrong-head">Das saß noch nicht</div>
+            <div id="wrongItems"></div>
+        </div>
+        <button class="btn-primary" onclick="restartModule()">🔄 Nochmal</button>
+        <button class="btn-back" onclick="goModules()">← Andere Module</button>
+    </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
+
+/* ---------- Persistenz ---------- */
+const SAVE_KEY = 'mikro-quest-v1';
+function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } }
+function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) {} }
+let save = loadSave();
+if (!save.xp) save.xp = 0;
+if (!save.best) save.best = {};
+if (!save.streak) save.streak = 0;
+if (!save.lastPlay) save.lastPlay = null;
+
+function updateStreak() {
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (save.lastPlay === today) { }
+    else if (save.lastPlay === yesterday) { save.streak += 1; save.lastPlay = today; }
+    else { save.streak = 1; save.lastPlay = today; }
+    writeSave(save);
+}
+
+/* ---------- Daten (inline, keine externen Quellen) ----------
+   mc    = Multiple Choice, a[0] ist die richtige Antwort (wird zur Anzeigezeit gemischt)
+   tf    = Wahr/Falsch, r = true bedeutet: die Aussage stimmt
+   match = Zuordnung, p = Paare [links, rechts]
+   order = Reihenfolge, s = Schritte in der richtigen Reihenfolge
+   cloze = Lueckentext zum Tippen, sol = akzeptierte Antworten
+*/
+const MODULE = [
+{ id:"reiche", emoji:"🧬", name:"Einteilung der Lebewesen", fragen:[
+  { t:"mc", q:"Warum ordnete man Pilze früher den Pflanzen zu?", a:["Weil sie sich nicht fortbewegen und pflanzenähnlich wachsen","Weil sie grün sind","Weil sie im Boden Wurzeln bilden","Weil sie Samen bilden"], f:"Pilze bewegen sich nicht fort und zeigen ein pflanzenähnliches Wachstum. Deshalb galten sie lange als Pflanzen." },
+  { t:"mc", q:"Welcher Wissenschaftler vertrat im 18. Jahrhundert die Einteilung in zwei Reiche?", a:["Carl von Linné","Alexander Fleming","Charles Darwin","Robert Koch"], f:"Carl von Linné gehörte zu den ersten Wissenschaftlern, die Ordnung in die Vielfalt der Lebewesen bringen wollten." },
+  { t:"mc", q:"Welche zwei Reiche wurden zuerst festgelegt?", a:["Pflanzen und Tiere","Pflanzen und Pilze","Tiere und Bakterien","Pilze und Protisten"], f:"Die erste Gliederung kannte nur zwei Reiche: Pflanzen und Tiere." },
+  { t:"mc", q:"Welches Merkmal der Pilzzelle hielt man für ein Pflanzenmerkmal?", a:["Die Zellwand","Den Zellkern","Die Geißel","Das Plasmid"], f:"Die im Mikroskop erkennbare Zellwand wurde als Merkmal einer Pflanzenzelle angesehen." },
+  { t:"mc", q:"Warum bilden Pilze ein eigenes Reich?", a:["Sie haben keine Chloroplasten und betreiben keine Fotosynthese","Sie haben keinen Zellkern","Sie bewegen sich aktiv fort","Sie bestehen immer nur aus einer Zelle"], f:"Pilze wachsen auch im Dunkeln, besitzen keine Chloroplasten und können deshalb keine Fotosynthese betreiben." },
+  { t:"mc", q:"Wie heißt das dritte Reich, in dem die einzelligen Organismen zusammengefasst wurden?", a:["Protisten","Prokaryoten","Eubakterien","Archaebakterien"], f:"Etwa hundert Jahre nach Linné trennte man die einzelligen Organismen ab und fasste sie als Protisten zusammen." },
+  { t:"cloze", q:"Lebewesen, die keinen Zellkern besitzen, nennt man ___.", sol:["prokaryoten","prokaryot"], f:"Lebewesen ohne Zellkern wurden im fünften Reich, den Prokaryoten, zusammengefasst." },
+  { t:"cloze", q:"Lebewesen mit Zellkern nennt man ___.", sol:["eukaryoten","eukaryot"], f:"Eukaryoten sind die Lebewesen mit Zellkern: Tiere, Pilze, Pflanzen und Protisten." },
+  { t:"mc", q:"Wie heißen die ursprünglichsten Bakterien der Erde, die in extremen Lebensräumen entdeckt wurden?", a:["Archaebakterien","Eubakterien","Protisten","Vibrionen"], f:"In extremen Lebensräumen wie heißen Quellen entdeckte man die Archaebakterien." },
+  { t:"mc", q:"In welche zwei Gruppen unterteilt man die Prokaryoten?", a:["Eubakterien und Archaebakterien","Pilze und Protisten","Kokken und Bazillen","Wildhefen und Reinzuchthefen"], f:"Die Prokaryoten wurden in die echten Bakterien, die Eubakterien, und die Archaebakterien unterteilt." },
+  { t:"mc", q:"Wie viele Reiche unterscheidet das zurzeit gültige Ordnungssystem?", a:["Sechs","Zwei","Drei","Fünf"], f:"Heute unterscheidet man sechs Reiche: Tiere, Pilze, Pflanzen, Protisten, Archaebakterien und Eubakterien." },
+  { t:"tf", q:"Die Zellen der Eukaryoten sind in der Regel größer als die Zellen der Prokaryoten.", r:true, f:"Eukaryotenzellen sind meist größer und haben eine komplexere Zellstruktur." },
+  { t:"tf", q:"Prokaryoten sind meist vielzellige Lebewesen.", r:false, f:"Prokaryoten sind meist einzellig, mikroskopisch klein und einfacher gebaut." },
+  { t:"match", q:"Ordne zu:", p:[["Linné","Einteilung in zwei Reiche"],["Protisten","drittes Reich der Einzeller"],["Prokaryoten","Lebewesen ohne Zellkern"],["Archaebakterien","leben z. B. in heißen Quellen"]], f:"Die Einteilung der Lebewesen hat sich immer wieder verändert: von zwei Reichen bis zu den heutigen sechs." },
+  { t:"mc", q:"Wie viele Mikroorganismen befinden sich etwa in zehn Litern Erde?", a:["Über 80 Milliarden","Etwa 300","Etwa 80.000","Etwa 2 Millionen"], f:"In zehn Litern Erde stecken über 80 Milliarden Mikroorganismen - weit mehr, als man mit bloßem Auge sieht." },
+]},
+
+{ id:"bau", emoji:"🔬", name:"Bau der Zellen", fragen:[
+  { t:"mc", q:"Was fehlt der Bakterienzelle?", a:["Ein Zellkern","Die Zellmembran","Das Zellplasma","Die Zellwand"], f:"Bakterien sind kernlose Einzeller. Ein Zellkern fehlt ihnen." },
+  { t:"mc", q:"Wo liegt die Erbsubstanz einer Bakterienzelle?", a:["Frei im Zellplasma","Im Zellkern","In der Zellwand","In der Kapsel"], f:"Weil der Zellkern fehlt, liegt die Erbsubstanz frei im Zellplasma." },
+  { t:"cloze", q:"Die kleinen Ringe mit zusätzlichen Erbinformationen in der Bakterienzelle heißen ___.", sol:["plasmide","plasmid"], f:"Plasmide tragen zusätzliche Erbinformationen für besondere Aufgaben." },
+  { t:"mc", q:"Welche besondere Aufgabe können Plasmide übernehmen?", a:["Den Abbau bakterienschädigender Substanzen","Die Fortbewegung der Zelle","Den Schutz vor Austrocknung","Die Aufnahme von Sonnenlicht"], f:"Plasmide tragen Erbinformationen für besondere Aufgaben, zum Beispiel den Abbau bakterienschädigender Substanzen." },
+  { t:"match", q:"Ordne jedem Zellbestandteil seine Funktion zu:", p:[["Ribosom","Eiweißproduktion"],["Zellmembran","geregelter Stoffaustausch"],["Zellwand","verleiht Stabilität"],["Geißel","dient der Fortbewegung"]], f:"Ribosomen bauen Eiweiße, die Zellmembran regelt den Stoffaustausch, die Zellwand gibt Halt, die Geißel bewegt die Zelle." },
+  { t:"mc", q:"Welche Aufgabe hat das Zellplasma?", a:["Es ermöglicht den Transport von Stoffen innerhalb der Zelle","Es produziert Eiweiße","Es umschließt die Zelle nach außen","Es speichert Sonnenlicht"], f:"Das Zellplasma ermöglicht den Transport von Stoffen innerhalb der Zelle." },
+  { t:"mc", q:"Wogegen schützt die Kapsel oder Schleimhülle?", a:["Gegen Austrocknung und schädliche Substanzen","Gegen zu viel Sonnenlicht","Gegen Nahrungsmangel","Gegen Sauerstoff"], f:"Die Kapsel oder Schleimhülle ist der Zellwand angelagert und schützt besonders gegen Austrocknung und schädliche Substanzen." },
+  { t:"tf", q:"Die Zellwand der Bakterien ist genauso gebaut wie die Zellwand von Pflanzen.", r:false, f:"Die feste Zellwand verleiht zwar Stabilität, unterscheidet sich im Bau aber von pflanzlichen Zellwänden." },
+  { t:"mc", q:"Wie groß sind Bakterien meist?", a:["Nur wenige Tausendstel Millimeter","Etwa einen halben Millimeter","Etwa so groß wie ein Sandkorn","Mehrere Zentimeter"], f:"Bakterien sind Einzeller, die meist nur wenige Tausendstel Millimeter groß sind." },
+  { t:"match", q:"Ordne die Bakterienform ihrem Aussehen zu:", p:[["Kokken","kugelförmig"],["Bazillen","stäbchenförmig"],["Spirillen","schraubenförmig"],["Vibrionen","kommaförmig"]], f:"Nach ihrer Form unterscheidet man Kokken, Bazillen, Spirillen und Vibrionen." },
+  { t:"cloze", q:"Das dünne, verzweigte Fadengeflecht eines Schimmelpilzes heißt ___.", sol:["mycel","myzel"], f:"Der Körper aller Schimmelpilze besteht aus dem Mycel." },
+  { t:"cloze", q:"Die einzelnen Fäden des Pilzgeflechts heißen ___.", sol:["hyphen","hyphe"], f:"Die einzelnen Fäden des Mycels werden als Hyphen bezeichnet." },
+  { t:"mc", q:"Was wächst aus dem Mycel senkrecht nach oben?", a:["Die Sporenträger","Die Hyphen","Die Wurzeln","Die Chloroplasten"], f:"Aus dem Mycel wachsen die Sporenträger senkrecht nach oben." },
+  { t:"mc", q:"Woran unterscheidet man die verschiedenen Schimmelpilzformen?", a:["Am Aussehen der Sporenträger","An der Länge der Hyphen","An der Farbe des Mycels","An der Größe der Zellen"], f:"Nach dem Aussehen der Sporenträger unterscheidet man Köpfchenschimmel, Gießkannenschimmel und Pinselschimmel." },
+  { t:"tf", q:"Schimmelpilze besitzen eine Zellwand, aber keine Chloroplasten.", r:true, f:"Schimmelpilzzellen besitzen wie pflanzliche Zellen eine Zellwand, haben jedoch keine Chloroplasten." },
+  { t:"mc", q:"Welche Zellbestandteile haben Hefezellen im Unterschied zu Tierzellen?", a:["Eine Zellwand und Vakuolen","Einen Zellkern und Ribosomen","Chloroplasten und Plasmide","Geißeln und eine Kapsel"], f:"Im Unterschied zu Tierzellen haben Hefen eine Zellwand und Vakuolen." },
+  { t:"mc", q:"Warum zählt man Hefepilze nicht zu den Pflanzen?", a:["Ihre Zellwand besteht nicht aus Zellulose und Chloroplasten fehlen","Sie haben keinen Zellkern","Sie bewegen sich mit Geißeln fort","Sie bestehen aus vielen Zellen"], f:"Da die Zellwand nicht aus Zellulose besteht und Chloroplasten fehlen, gehören Hefepilze nicht zu den Pflanzen." },
+  { t:"mc", q:"Wie groß ist eine Hefezelle etwa?", a:["0,006 Millimeter, ein Zehntel eines Haardurchmessers","0,6 Millimeter, etwa ein Sandkorn","6 Millimeter","Genauso groß wie ein Bakterium"], f:"Hefepilze haben einen Durchmesser von etwa 0,006 Millimetern. Das ist ein Zehntel des Durchmessers eines Haares." },
+]},
+
+{ id:"verm", emoji:"🌱", name:"Vermehrung & Überdauern", fragen:[
+  { t:"cloze", q:"Die besondere Zellteilung, mit der sich Hefepilze vermehren, heißt ___.", sol:["knospung"], f:"Hefen vermehren sich durch Knospung." },
+  { t:"mc", q:"Was passiert bei der Knospung?", a:["Am Zellkörper wächst eine Ausstülpung, die sich abschnürt","Die Zelle teilt sich in zwei gleich große Hälften","Die Zelle bildet Sporen","Zwei Zellen verschmelzen miteinander"], f:"Am Zellkörper wächst eine kleine Ausstülpung hervor, die sich abschnürt und zu einem neuen Hefepilz wird." },
+  { t:"mc", q:"Welche Bedingungen brauchen Hefen, um sich rasch zu vermehren?", a:["Glukose, Feuchtigkeit und Wärme","Kälte und Trockenheit","Salz und Licht","Sauerstoffmangel und Säure"], f:"Bei idealen Lebensbedingungen - Glukose, Feuchtigkeit und Wärme - vermehren sich Hefen rasch." },
+  { t:"mc", q:"Wie vermehren sich Schimmelpilze in der Regel?", a:["Ungeschlechtlich mit Hilfe ihrer Sporen","Durch Knospung","Durch Samen","Durch Teilung des Zellkerns"], f:"Schimmelpilze vermehren sich in der Regel ungeschlechtlich mit Hilfe ihrer Sporen." },
+  { t:"tf", q:"Die einzelnen Sporen eines Schimmelpilzes kann man mit bloßem Auge gut erkennen.", r:false, f:"Die einzelnen Sporen sind für den Menschen nicht sichtbar. Erkennbar sind nur die gefärbten Sporenträger." },
+  { t:"mc", q:"Wie werden Schimmelsporen verbreitet?", a:["Sie rieseln herab und schon der leichteste Windhauch trägt sie weiter","Nur über Wasser","Nur durch Berührung","Durch Insekten"], f:"Die Sporen rieseln zu Tausenden von der Spitze der Sporenträger herab und werden vom leichtesten Windhauch verbreitet." },
+  { t:"tf", q:"Selbst in der saubersten Küche sind Schimmelsporen zu finden.", r:true, f:"Sporen der Schimmelpilze sind überall, selbst in der saubersten Küche." },
+  { t:"mc", q:"Was brauchen Schimmelsporen zum Keimen?", a:["Feuchtigkeit und organische Stoffe","Nur Wärme","Nur Licht","Salz und Zucker"], f:"Zur Keimung benötigen die Sporen Feuchtigkeit und organische Stoffe." },
+  { t:"tf", q:"Auf einem Stein können Schimmelsporen keimen.", r:false, f:"Auf Papier oder Holz ist Wachstum möglich, auf einem Stein können keine Sporen keimen - dort fehlen die organischen Stoffe." },
+  { t:"mc", q:"Was entwickelt sich, sobald eine Spore keimt?", a:["Ein neues Mycel","Ein neuer Sporenträger ohne Mycel","Eine Bakterienkolonie","Eine Hefezelle"], f:"Sobald eine Spore keimt, entwickelt sich daraus ein neues Mycel." },
+  { t:"mc", q:"Warum bilden einige Bakterien Sporen?", a:["Um ungünstige Bedingungen wie Trockenheit oder Nahrungsmangel zu überdauern","Um sich schneller zu vermehren","Um sich fortzubewegen","Um Energie aus Licht zu gewinnen"], f:"Unter ungünstigen Bedingungen wie Trockenheit oder Nahrungsmangel bilden einige Bakterien Sporen als Überdauerungsform." },
+  { t:"order", q:"Bringe die Sporenbildung beim Bakterium in die richtige Reihenfolge:", s:["Die Lebensbedingungen werden ungünstig, z. B. durch Trockenheit","Die Erbsubstanz reichert sich in einem Bereich der Zelle an","Die Zellmembran umschließt die Erbsubstanz und einen Teil des Zellplasmas","Es entsteht eine mehrschichtige, robuste Hülle","Die Spore überdauert, bis die Bedingungen wieder besser sind"], f:"So läuft die Sporenbildung ab: ungünstige Bedingungen, Anreicherung der Erbsubstanz, Umschließen durch die Zellmembran, robuste Hülle, Überdauern." },
+  { t:"tf", q:"Bakteriensporen werden durch Kochen sicher abgetötet.", r:false, f:"Anders als die meisten Bakterien werden die Sporen durch Kochen nicht abgetötet." },
+  { t:"mc", q:"Wie lange können Bakteriensporen überdauern?", a:["Viele Jahrhunderte","Höchstens ein paar Stunden","Etwa eine Woche","Etwa ein Jahr"], f:"Sporen können viele Jahrhunderte überdauern, bis die Lebensbedingungen besser sind." },
+]},
+
+{ id:"stoff", emoji:"⚡", name:"Stoffwechsel & Energie", fragen:[
+  { t:"mc", q:"Was ist die Nahrungsgrundlage und Energiequelle der Hefepilze?", a:["Zucker, zum Beispiel Glukose","Sonnenlicht","Eiweiß","Metalle"], f:"Zucker wie Glukose ist die Nahrungsgrundlage und Energiequelle der Hefepilze." },
+  { t:"mc", q:"Welcher Vorgang läuft bei Hefen ab, wenn Sauerstoff vorhanden ist?", a:["Die Zellatmung","Die alkoholische Gärung","Die Fotosynthese","Die Knospung"], f:"Bei Anwesenheit von Sauerstoff findet die Zellatmung statt." },
+  { t:"mc", q:"Wozu wird Glukose bei der Zellatmung vollständig abgebaut?", a:["Zu Kohlenstoffdioxid und Wasser","Zu Alkohol und Wasser","Zu Alkohol und Kohlenstoffdioxid","Zu Eiweiß und Zucker"], f:"Bei der Zellatmung wird Glukose vollkommen zu Kohlenstoffdioxid und Wasser abgebaut." },
+  { t:"cloze", q:"Wird Glukose ohne Sauerstoff in Alkohol und Kohlenstoffdioxid umgesetzt, nennt man das alkoholische ___.", sol:["gärung","gaerung"], f:"Bei Abwesenheit von Sauerstoff wird Glukose in Alkohol und Kohlenstoffdioxid umgesetzt - die alkoholische Gärung." },
+  { t:"mc", q:"Wie unterscheidet sich die Energieausbeute der Gärung von der Zellatmung?", a:["Sie ist geringer als bei der Zellatmung","Sie ist höher als bei der Zellatmung","Sie ist genau gleich","Bei der Gärung entsteht gar keine Energie"], f:"Gasbildung und Energieausbeute sind bei der Gärung geringer als bei der Zellatmung." },
+  { t:"mc", q:"Wann kommt die alkoholische Gärung zum Stillstand?", a:["Wenn der Zucker abgebaut ist oder der Alkohol über etwa 18 Prozent steigt","Sobald Sauerstoff dazukommt","Sobald es wärmer als 20 °C wird","Sobald Wasser entsteht"], f:"Die Gärung kommt zum Stillstand, wenn der Zucker aufgebraucht ist oder die Alkoholkonzentration über etwa 18 Prozent steigt." },
+  { t:"mc", q:"Warum sterben Hefezellen bei hoher Alkoholkonzentration ab?", a:["Alkohol ist ein starkes Zellgift","Alkohol entzieht ihnen das Licht","Alkohol ist zu sauer","Alkohol kühlt die Zellen zu stark ab"], f:"Bei höherer Alkoholkonzentration sterben die Hefezellen ab, da Alkohol ein starkes Zellgift ist." },
+  { t:"mc", q:"Woran passen Hefen ihren Glukosestoffwechsel aktiv an?", a:["An das Sauerstoffangebot","An die Tageszeit","An den Salzgehalt","An die Lichtmenge"], f:"Hefen können den Glukosestoffwechsel steuern und aktiv an das Sauerstoffangebot anpassen." },
+  { t:"match", q:"Ordne zu, was dabei entsteht:", p:[["Zellatmung","Kohlenstoffdioxid und Wasser"],["Alkoholische Gärung","Alkohol und Kohlenstoffdioxid"],["Atmung bei Bakterien","Stoffwechsel mit Sauerstoff"],["Gärung bei Bakterien","Stoffwechsel ohne Sauerstoff"]], f:"Je nachdem, ob Sauerstoff benötigt wird, unterscheidet man Atmung und Gärung." },
+  { t:"tf", q:"Manchen Bakterien dient das Sonnenlicht als Energiequelle.", r:true, f:"Der bakterielle Stoffwechsel ist vielfältig: Manchen Bakterien dient Sonnenlicht als Energiequelle." },
+  { t:"mc", q:"Woraus können manche Bakterien außerdem Energie freisetzen?", a:["Aus anorganischen Stoffen wie Metallen","Nur aus Zucker","Nur aus Eiweiß","Aus Alkohol"], f:"Es gibt Bakterien, die aus anorganischen Stoffen wie Metallen Energie freisetzen können." },
+  { t:"mc", q:"Wonach unterscheidet man beim bakteriellen Stoffwechsel Atmung und Gärung?", a:["Danach, ob für den Stoffwechsel Sauerstoff benötigt wird","Nach der Temperatur","Nach der Form des Bakteriums","Danach, ob Licht vorhanden ist"], f:"Je nachdem, ob für den Stoffwechsel Sauerstoff benötigt wird oder nicht, unterscheidet man Atmung und Gärung." },
+  { t:"tf", q:"Der bakterielle Stoffwechsel ist häufig an den Lebensraum angepasst.", r:true, f:"Der bakterielle Stoffwechsel ist häufig an den Lebensraum angepasst - deshalb leben Bakterien fast überall." },
+  { t:"mc", q:"Was gilt für alle Lebensvorgänge?", a:["An ihnen sind Stoff- und Energieumwandlungen beteiligt","Sie brauchen immer Sauerstoff","Sie laufen nur im Licht ab","Sie finden nur in Zellen mit Zellkern statt"], f:"An allen Lebensvorgängen sind Stoff- und Energieumwandlungen beteiligt. Lebewesen nehmen Stoffe und Energie auf und machen sie nutzbar." },
+]},
+
+{ id:"nutzen", emoji:"🍞", name:"Nutzen für den Menschen", fragen:[
+  { t:"mc", q:"Seit wann sind Weingewinnung und Bierproduktion in Ägypten nachgewiesen?", a:["Seit dem 3. Jahrtausend v. Chr.","Seit dem Mittelalter","Erst seit der Erfindung des Mikroskops","Seit etwa 200 Jahren"], f:"Bereits im 3. Jahrtausend v. Chr. sind Weingewinnung und Bierproduktion in Ägypten nachgewiesen." },
+  { t:"order", q:"Bringe das Brotbacken in die richtige Reihenfolge:", s:["Hefe kommt in den Teig","Der Teig wird lange geknetet und bekommt dabei Luft","Die Hefe baut den Zucker ab","Es entsteht Kohlenstoffdioxidgas","Der Teig geht auf und wird locker"], f:"Bei ausreichender Luftzufuhr durch Kneten bildet sich Kohlenstoffdioxidgas, das den Brotteig aufgehen und locker werden lässt." },
+  { t:"mc", q:"Welches Gas lässt den Brotteig aufgehen?", a:["Kohlenstoffdioxid","Sauerstoff","Stickstoff","Wasserdampf"], f:"Das von der Hefe gebildete Kohlenstoffdioxidgas lässt den Brotteig aufgehen." },
+  { t:"mc", q:"Warum muss der Brotteig lange geknetet werden?", a:["Damit genug Luft in den Teig gelangt","Damit der Teig wärmer wird","Damit der Zucker herausgepresst wird","Damit die Hefe abstirbt"], f:"Erst bei ausreichender Luftzufuhr durch Kneten des Teigs bildet sich genügend Kohlenstoffdioxidgas." },
+  { t:"match", q:"Ordne zu:", p:[["Wildhefen","kommen überall in der Luft vor"],["Reinzuchthefen","werden gezüchtet, z. B. Bierhefe"],["Mikroskop","machte den Nachweis der Hefepilze möglich"],["Saccharomyces","Zuckerpilz, Name der Hefepilze"]], f:"Man unterscheidet natürliche Wildhefen und gezüchtete Reinzuchthefen. Erst das Mikroskop machte die Hefepilze sichtbar." },
+  { t:"mc", q:"Warum verwendet man in der Produktion heute nur Reinzuchthefen?", a:["Weil sie eine konstante Qualität der Produkte ermöglichen","Weil sie billiger sind","Weil sie ohne Zucker auskommen","Weil sie keinen Alkohol bilden"], f:"Früher fiel die Qualität des Biers mit Wildhefen unterschiedlich aus. Reinzuchthefen ermöglichen eine konstante Qualität." },
+  { t:"mc", q:"Wie viele verschiedene Hefepilzarten kennt man heute?", a:["Über 600","Etwa 20","Etwa 100","Über 10.000"], f:"Heute kennt man über 600 verschiedene Hefepilzarten." },
+  { t:"mc", q:"Was verursacht das typische Aussehen und den Geschmack von Camembert?", a:["Bestimmte Schimmelpilze","Bestimmte Bakteriensporen","Hefepilze","Milchsäure aus Pflanzen"], f:"Camembert ist eine Käsesorte, deren charakteristisches Aussehen und typischer Geschmack von bestimmten Schimmelpilzen verursacht wird." },
+  { t:"cloze", q:"Stoffe aus Schimmelpilzen, die Bakterien abtöten, bezeichnet man als ___.", sol:["antibiotika","antibiotikum"], f:"Stoffe, die Bakterien abtöten, werden als Antibiotika bezeichnet." },
+  { t:"mc", q:"Wer entdeckte Schimmelpilze, die Bakterien abtötende Stoffe herstellen?", a:["Alexander Fleming","Carl von Linné","Robert Koch","Louis Pasteur"], f:"Der Bakterienforscher Alexander Fleming entdeckte Schimmelpilze, die Stoffe herstellen, die Bakterien abtöten." },
+  { t:"cloze", q:"Die Gesamtheit der Mikroorganismen im und auf dem Menschen nennt man ___.", sol:["mikrobiom"], f:"Die Gesamtheit dieser Lebewesen bezeichnet man als Mikrobiom. Jeder Mensch besitzt ein eigenes." },
+  { t:"mc", q:"Mit wie vielen Bakterien und anderen Mikroorganismen ist ein Mensch besiedelt?", a:["Mit etwa 40 bis 100 Billionen","Mit etwa 40 bis 100 Millionen","Mit etwa 1 Milliarde","Mit etwa 500.000"], f:"Jeder Mensch ist von etwa 40 bis 100 Billionen Bakterien und anderen Mikroorganismen besiedelt - das entspricht etwa der Anzahl seiner Körperzellen." },
+  { t:"mc", q:"Wo leben die meisten Mikroorganismen des Menschen?", a:["Im Verdauungstrakt, auf der Haut und den Schleimhäuten","Im Blut","In den Knochen","In den Haaren"], f:"Die meisten Mikroorganismen leben im Verdauungstrakt, auf der Haut und den Schleimhäuten." },
+  { t:"mc", q:"Was deuten Forschungsergebnisse zum Darmmikrobiom an?", a:["Es kommuniziert mit dem Gehirn und macht weniger stressanfällig","Es ist bei allen Menschen gleich","Es hat keinen Einfluss auf die Gesundheit","Es entsteht erst im Erwachsenenalter"], f:"Forschungsergebnisse deuten darauf hin, dass das Darmmikrobiom mit dem Gehirn kommuniziert und den Menschen weniger stressanfällig macht." },
+]},
+
+{ id:"gefahr", emoji:"⚠️", name:"Gefahren & Schutz", fragen:[
+  { t:"mc", q:"Was bilden einige Schimmelpilze?", a:["Gifte und krebserregende Stoffe","Antikörper","Sauerstoff","Vitamine"], f:"Einige Schimmelpilze bilden Gifte und krebserregende Stoffe." },
+  { t:"mc", q:"Warum reicht es nicht, nur den sichtbaren Schimmelbelag zu entfernen?", a:["Das unsichtbare Mycel mit den Giftstoffen steckt noch im Inneren","Der Belag wächst sofort wieder nach","Die Sporen sind dann noch auf der Oberfläche","Das Lebensmittel wird sonst zu trocken"], f:"Auch nach der Entfernung des sichtbaren Belags ist das feingliedrige, nicht sichtbare Mycel im Inneren vorhanden - und dieses enthält die Giftstoffe." },
+  { t:"mc", q:"Bei welchen Temperaturen wachsen die meisten Schimmelpilze am besten?", a:["Zwischen 20 und 35 °C","Zwischen 0 und 5 °C","Zwischen 40 und 60 °C","Unter 0 °C"], f:"Die meisten Schimmelpilze wachsen am besten bei Temperaturen zwischen 20 und 35 °C." },
+  { t:"mc", q:"Was sind häufige Ursachen für Schimmel an der Wand?", a:["Falsche Belüftung oder Feuchtigkeit","Zu viel Sonnenlicht","Zu trockene Luft","Zu niedrige Temperaturen"], f:"Eine falsche Belüftung oder Feuchtigkeit können die Ursachen für Schimmelbildung an der Wand sein." },
+  { t:"match", q:"Ordne die Schutzmaßnahme ihrem Beispiel zu:", p:[["Trocknen","Obst und Gemüse haltbar machen"],["Einlegen","in Salz, Zucker oder Essig"],["Kühl lagern","Lebensmittel in den Kühlschrank"],["Richtig lüften","Schimmel an der Wand vorbeugen"]], f:"Zum Schutz vor Schimmelpilzbefall lagert man Lebensmittel kühl, trocknet Obst und Gemüse oder legt sie in Salz, Zucker oder Essig ein." },
+  { t:"mc", q:"Woran erkennt man reife Sporenträger auf verschimmelten Lebensmitteln?", a:["An Farben wie Grün, Gelb, Rot, Schwarz oder Weiß","An einem lauten Knistern","An einer glatten, glänzenden Oberfläche","Nur unter dem Mikroskop"], f:"Reife Sporenträger sind unterschiedlich gefärbt. Erkennbar sind Farben wie Grün, Gelb, Rot, Schwarz oder Weiß." },
+  { t:"tf", q:"Alle Bakterien sind für den Menschen schädlich.", r:false, f:"Die meisten Bakterien sind für den Menschen wichtig und harmlos, einige jedoch sind schädlich." },
+  { t:"mc", q:"Wie gelangen die Erreger des Wundstarrkrampfs in den Körper?", a:["Über Verletzungen","Über die Atemluft","Über die Haut, auch ohne Wunde","Über verdorbenes Obst"], f:"Über Verletzungen kommen zum Beispiel die Erreger des Wundstarrkrampfs in den Körper." },
+  { t:"mc", q:"Was lösen die Giftstoffe der Wundstarrkrampf-Erreger aus?", a:["Unkontrollierbare Muskelkrämpfe am Rückenmark","Starken Husten","Hautausschlag","Fieberschauer im Darm"], f:"Ihre Giftstoffe lösen am Rückenmark unkontrollierbare Muskelkrämpfe aus." },
+  { t:"mc", q:"Welche Kost bietet den Erregern der Salmonellose ideale Lebensbedingungen?", a:["Besonders eiweißreiche Kost wie Geflügelprodukte","Besonders fettarme Kost","Rohes Obst","Trockene Nudeln"], f:"Besonders eiweißreiche Kost wie Geflügelprodukte bietet den Erregern der Salmonellose ideale Lebensbedingungen." },
+  { t:"mc", q:"Welche Folgen hat eine Salmonellose?", a:["Bauchschmerzen und Brechdurchfall","Muskelkrämpfe","Husten und Schnupfen","Hautrötungen"], f:"Gelangen die Erreger mit der Nahrung in den Darm, sind Bauchschmerzen und Brechdurchfall die Folgen." },
+  { t:"mc", q:"Unter welchen Bedingungen gelangen Salmonellen mit der Nahrung in den Darm?", a:["Unter unhygienischen Bedingungen","Nur bei Kälte","Nur bei trockener Lagerung","Nur bei sehr langem Kochen"], f:"Unter unhygienischen Bedingungen gelangen die Erreger mit der Nahrung in den Darm." },
+  { t:"tf", q:"Bakterien findet man selbst in heißen Quellen, Vulkankratern und im Eis an den Polen.", r:true, f:"Bakterien besiedeln alle Lebensräume. Selbst in lebensfeindlichen Gebieten wie heißen Quellen, Vulkankratern oder im Eis an den Polen lassen sie sich finden." },
+  { t:"cloze", q:"Ist das Leitungswasser verunreinigt, soll man es vor dem Gebrauch ___.", sol:["abkochen","kochen"], f:"Bei verunreinigtem Wasser gilt: Zum Zubereiten von Nahrung, zum Zähneputzen und zum Reinigen offener Wunden nur abgekochtes Leitungswasser verwenden." },
+]},
+
+{ id:"transfer", emoji:"🧠", name:"Anwenden", fragen:[
+  { t:"mc", q:"Luise isst als Veganerin keine Pilze. Welche Begründung passt zum heutigen Ordnungssystem?", a:["Pilze sind keine Pflanzen, sondern bilden ein eigenes Reich","Pilze gehören zu den Tieren","Pilze sind Bakterien","Pilze gehören zu den Protisten"], f:"Pilze konnten weder den Pflanzen noch den Tieren zugeordnet werden und bilden ein eigenes Reich. Wer nur Pflanzliches isst, kann daraus schließen, dass Pilze nicht dazugehören." },
+  { t:"mc", q:"In Häusern mit Schimmel an den Wänden erkrankten Säuglinge an der Lunge. Wie konnten die Sporen in die Lungen gelangen?", a:["Die Sporen rieseln herab, werden von der Luft verteilt und eingeatmet","Die Sporen wurden über das Trinkwasser aufgenommen","Die Sporen wachsen von der Wand durch die Haut","Die Sporen entstehen erst in der Lunge"], f:"Sporen rieseln zu Tausenden von den Sporenträgern herab und werden vom leichtesten Windhauch verbreitet - und damit auch eingeatmet." },
+  { t:"mc", q:"Welche drei Faktoren begünstigen Schimmelwachstum in Räumen?", a:["Feuchtigkeit, falsche Belüftung und Temperaturen zwischen 20 und 35 °C","Trockenheit, Zugluft und Kälte","Sonnenlicht, Wärme und Salz","Sauerstoffmangel, Kälte und Essig"], f:"Schimmelpilze brauchen Feuchtigkeit und organische Stoffe, wachsen am besten zwischen 20 und 35 °C, und falsche Belüftung begünstigt den Befall." },
+  { t:"mc", q:"Auf dem Brot ist eine schimmelige Stelle. Was ist richtig?", a:["Das ganze Brot wegwerfen, weil das Mycel mit den Giftstoffen unsichtbar weiterreicht","Nur die Stelle großzügig abschneiden, der Rest ist sicher","Das Brot abbacken, dann ist es wieder essbar","Das Brot einfrieren, dann sind die Gifte weg"], f:"Das feingliedrige Mycel im Inneren bleibt auch nach Entfernen des sichtbaren Belags vorhanden und enthält die Giftstoffe." },
+  { t:"mc", q:"Ein Pavian torkelt, nachdem er reife Marulafrüchte gefressen hat. Warum?", a:["Hefepilze auf den Früchten haben deren Zucker zu Alkohol vergoren","Die Früchte enthalten von Natur aus ein Nervengift","Der Zucker macht ihn müde","Die Früchte enthalten Bakteriensporen"], f:"Winzige Hefepilze in den Früchten vergären den Zucker ohne Sauerstoff zu Alkohol - der Pavian wird betrunken und verliert das Gleichgewicht." },
+  { t:"mc", q:"Wie konnte man in früher Zeit Bier brauen, ohne etwas von Hefepilzen zu wissen?", a:["Wildhefen aus der Luft gelangten von selbst in den Saft","Man züchtete Reinzuchthefen ohne Mikroskop","Bier entsteht auch ganz ohne Hefe","Man setzte Bakterien zu"], f:"Wildhefen kommen überall in der Luft vor. Man beobachtete, dass süße Säfte von allein zu gären beginnen, ohne die Ursache zu kennen." },
+  { t:"mc", q:"Frisch gepresster Traubensaft soll vergoren werden. Wodurch kommt die Gärung zum Stillstand?", a:["Der Zucker ist aufgebraucht oder der Alkohol steigt über etwa 18 Prozent","Der Saft wird zu kalt gelagert","Es kommt Sauerstoff dazu","Der Saft wird zu stark gerührt"], f:"Die Gärung endet, wenn der Zucker abgebaut ist oder die Alkoholkonzentration über etwa 18 Prozent steigt und die Hefezellen absterben." },
+  { t:"mc", q:"Warum heißen Hefepilze auch Saccharomyces?", a:["Von griechisch sakchar für Zucker und mykes für Pilz","Nach ihrem Entdecker","Weil sie in Säcken wachsen","Weil sie Sauerstoff brauchen"], f:"Saccharomyces heißt wörtlich Zuckerpilz - Zucker ist die Nahrungsgrundlage der Hefen." },
+  { t:"mc", q:"Eine Zeitung titelt zum Mikrobiom: Du bist nicht allein. Was ist gemeint?", a:["Im und auf dem Menschen leben Billionen Mikroorganismen","Jeder Mensch hat Zwillingszellen","Bakterien leben nur außerhalb des Körpers","Der Mensch besteht aus zwei Zelltypen"], f:"Jeder Mensch ist von 40 bis 100 Billionen Mikroorganismen besiedelt - etwa so vielen, wie er eigene Körperzellen hat." },
+  { t:"mc", q:"Warum ist gekochtes Essen nicht automatisch keimfrei?", a:["Bakteriensporen überstehen das Kochen","Beim Kochen entstehen neue Bakterien","Kochen tötet nur Schimmelpilze","Bakterien vermehren sich beim Erhitzen"], f:"Anders als die meisten Bakterien werden die Sporen durch Kochen nicht abgetötet." },
+  { t:"tf", q:"Ein nackter Stein an einer feuchten Wand kann selbst verschimmeln.", r:false, f:"Auf einem Stein können keine Sporen keimen, weil dort die organischen Stoffe fehlen. Feuchtigkeit allein reicht nicht." },
+]},
+];
+
+/* ---------- Spiel-Logik ---------- */
+let activeMod = null, questions = [], idx = 0, correct = 0, wrongLog = [];
+let mSel = null, mErr = 0, mLeft = 0, oPick = [];
+
+const TYPE_LABEL = { mc:"🔘 Auswahl", tf:"⚖️ Wahr oder falsch", match:"🔗 Zuordnen", order:"🔢 Reihenfolge", cloze:"⌨️ Eintippen" };
+
+function shuffleIndices(n) {
+    const a = Array.from({length:n}, (_, i) => i);
+    for (let i = a.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+}
+function shuffled(arr) { return shuffleIndices(arr.length).map(i => arr[i]); }
+
+/* Pflicht-Shuffle: richtige Antwort darf nie an fester Position stehen */
+function prepareQuestion(q) {
+    if (q.t === "mc") {
+        const order = shuffleIndices(q.a.length);
+        return { t:"mc", q:q.q, f:q.f, a:order.map(i => q.a[i]), c:order.indexOf(0) };
+    }
+    if (q.t === "match") {
+        return { t:"match", q:q.q, f:q.f, p:q.p, left:shuffled(q.p.map(x => x[0])), right:shuffled(q.p.map(x => x[1])) };
+    }
+    if (q.t === "order") {
+        return { t:"order", q:q.q, f:q.f, s:q.s, disp:shuffled(q.s.map((v,i) => ({v:v, i:i}))) };
+    }
+    return Object.assign({}, q);
+}
+
+function norm(s) {
+    return String(s).toLowerCase().trim()
+        .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+        .replace(/[^a-z0-9]/g,"");
+}
+
+function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+}
+
+function refreshWelcomeStats() {
+    document.getElementById('wXp').textContent = save.xp;
+    document.getElementById('wStreak').textContent = save.streak;
+    const done = MODULE.filter(m => (save.best[m.id]||0) >= 100).length;
+    document.getElementById('wDone').textContent = done + "/" + MODULE.length;
+}
+
+function goModules() {
+    const grid = document.getElementById('modGrid');
+    grid.innerHTML = '';
+    MODULE.forEach(m => {
+        const best = save.best[m.id] || 0;
+        let cls = 'mp-todo', label = 'Neu';
+        if (best >= 100) { cls = 'mp-done'; label = '100% ✓'; }
+        else if (best > 0) { cls = 'mp-mid'; label = best + '%'; }
+        const card = document.createElement('button');
+        card.className = 'mod-card';
+        card.onclick = () => startModule(m.id);
+        card.innerHTML =
+            '<span class="mod-emoji">' + m.emoji + '</span>' +
+            '<span class="mod-info"><span class="mod-name">' + m.name + '</span>' +
+            '<span class="mod-meta">' + m.fragen.length + ' Aufgaben</span></span>' +
+            '<span class="mod-prog ' + cls + '">' + label + '</span>';
+        grid.appendChild(card);
+    });
+    show('modulesScreen');
+}
+
+function startModule(modId) {
+    activeMod = MODULE.find(m => m.id === modId);
+    const order = shuffleIndices(activeMod.fragen.length);
+    questions = order.map(i => prepareQuestion(activeMod.fragen[i]));
+    idx = 0; correct = 0; wrongLog = [];
+    show('quizScreen');
+    render();
+}
+
+function startAll() {
+    const pool = [];
+    MODULE.forEach(m => m.fragen.forEach(q => pool.push(q)));
+    const order = shuffleIndices(pool.length).slice(0, 30);
+    activeMod = { id:"all", emoji:"🎲", name:"Alles gemischt", fragen:pool };
+    questions = order.map(i => prepareQuestion(pool[i]));
+    idx = 0; correct = 0; wrongLog = [];
+    show('quizScreen');
+    render();
+}
+
+function restartModule() {
+    if (!activeMod) return;
+    if (activeMod.id === "all") startAll(); else startModule(activeMod.id);
+}
+
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function render() {
+    const q = questions[idx];
+    const total = questions.length;
+    mSel = null; mErr = 0; oPick = [];
+
+    document.getElementById('qCounter').textContent = 'Frage ' + (idx+1) + ' / ' + total;
+    document.getElementById('cCounter').textContent = '✅ ' + correct + ' richtig';
+    document.getElementById('progFill').style.width = ((idx/total)*100) + '%';
+    document.getElementById('catPill').textContent = activeMod.emoji + ' ' + activeMod.name;
+    document.getElementById('typePill').textContent = TYPE_LABEL[q.t];
+    document.getElementById('qText').textContent = q.q;
+
+    const hint = document.getElementById('hintLine');
+    const zone = document.getElementById('answerZone');
+    zone.innerHTML = '';
+    hint.style.display = 'none';
+
+    if (q.t === 'mc') {
+        const div = document.createElement('div');
+        div.className = 'answers';
+        q.a.forEach((ans, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'answer-btn';
+            btn.innerHTML = '<span class="ans-letter">' + String.fromCharCode(65+i) + '</span>' +
+                            '<span class="ans-text">' + esc(ans) + '</span><span class="ans-icon"></span>';
+            btn.onclick = () => pickMC(i);
+            div.appendChild(btn);
+        });
+        zone.appendChild(div);
+    }
+
+    if (q.t === 'tf') {
+        const div = document.createElement('div');
+        div.className = 'answers';
+        [['Wahr','✅'],['Falsch','❌']].forEach((o, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'answer-btn';
+            btn.innerHTML = '<span class="ans-letter">' + o[1] + '</span>' +
+                            '<span class="ans-text">' + o[0] + '</span><span class="ans-icon"></span>';
+            btn.onclick = () => pickTF(i === 0);
+            div.appendChild(btn);
+        });
+        zone.appendChild(div);
+    }
+
+    if (q.t === 'match') {
+        hint.textContent = 'Erst links antippen, dann rechts den passenden Partner.';
+        hint.style.display = 'block';
+        mLeft = q.p.length;
+        const grid = document.createElement('div');
+        grid.className = 'match-grid';
+        const colL = document.createElement('div');
+        const colR = document.createElement('div');
+        q.left.forEach(txt => {
+            const b = document.createElement('button');
+            b.className = 'm-chip'; b.textContent = txt; b.dataset.val = txt; b.dataset.side = 'l';
+            b.onclick = () => pickMatchLeft(b);
+            colL.appendChild(b);
+        });
+        q.right.forEach(txt => {
+            const b = document.createElement('button');
+            b.className = 'm-chip'; b.textContent = txt; b.dataset.val = txt; b.dataset.side = 'r';
+            b.onclick = () => pickMatchRight(b);
+            colR.appendChild(b);
+        });
+        grid.appendChild(colL); grid.appendChild(colR);
+        zone.appendChild(grid);
+    }
+
+    if (q.t === 'order') {
+        hint.textContent = 'Tippe die Schritte in der richtigen Reihenfolge an.';
+        hint.style.display = 'block';
+        const list = document.createElement('div');
+        list.className = 'order-list';
+        q.disp.forEach(step => {
+            const b = document.createElement('button');
+            b.className = 'o-step'; b.dataset.i = step.i;
+            b.innerHTML = '<span class="o-num">·</span><span>' + esc(step.v) + '</span>';
+            b.onclick = () => pickOrder(b);
+            list.appendChild(b);
+        });
+        zone.appendChild(list);
+        const rst = document.createElement('button');
+        rst.className = 'btn-reset'; rst.textContent = '↺ Nochmal sortieren';
+        rst.onclick = () => render();
+        zone.appendChild(rst);
+    }
+
+    if (q.t === 'cloze') {
+        const inp = document.createElement('input');
+        inp.className = 'cloze-input'; inp.id = 'clozeInput';
+        inp.type = 'text'; inp.autocomplete = 'off'; inp.autocapitalize = 'off';
+        inp.autocorrect = 'off'; inp.spellcheck = false;
+        inp.placeholder = 'Antwort eintippen';
+        inp.setAttribute('enterkeyhint','go');
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkCloze(); });
+        zone.appendChild(inp);
+        const btn = document.createElement('button');
+        btn.className = 'btn-check'; btn.id = 'clozeBtn'; btn.textContent = 'Prüfen';
+        btn.onclick = () => checkCloze();
+        zone.appendChild(btn);
+    }
+
+    document.getElementById('fbBox').className = 'feedback-box';
+    document.getElementById('nextBtn').className = 'btn-next';
+}
+
+function finishItem(ok, titleHtml) {
+    if (ok) correct++; else wrongLog.push(questions[idx].q);
+    document.getElementById('cCounter').textContent = '✅ ' + correct + ' richtig';
+    const fb = document.getElementById('fbBox');
+    const title = document.getElementById('fbTitle');
+    fb.className = 'feedback-box show ' + (ok ? 'fb-correct' : 'fb-wrong');
+    title.innerHTML = titleHtml;
+    title.style.color = ok ? '#15803d' : '#b91c1c';
+    document.getElementById('fbFact').textContent = questions[idx].f;
+    document.getElementById('nextBtn').className = 'btn-next show';
+    document.getElementById('nextTxt').textContent = (idx+1 >= questions.length) ? '🏆 Ergebnis sehen!' : 'Weiter ➜';
+}
+
+function pickMC(sel) {
+    const q = questions[idx];
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(b => b.disabled = true);
+    const ok = sel === q.c;
+    btns.forEach((b, i) => {
+        if (i === q.c) { b.classList.add('a-correct'); b.querySelector('.ans-icon').textContent = '✅'; }
+        else if (i === sel && !ok) { b.classList.add('a-wrong'); b.querySelector('.ans-icon').textContent = '❌'; }
+        else { b.classList.add('a-dimmed'); }
+    });
+    finishItem(ok, ok ? '✅ Richtig!' : '❌ Falsch! Richtig: <strong>' + esc(q.a[q.c]) + '</strong>');
+}
+
+function pickTF(saidTrue) {
+    const q = questions[idx];
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(b => b.disabled = true);
+    const ok = (saidTrue === q.r);
+    const rightIdx = q.r ? 0 : 1;
+    btns.forEach((b, i) => {
+        if (i === rightIdx) { b.classList.add('a-correct'); b.querySelector('.ans-icon').textContent = '✅'; }
+        else { b.classList.add(ok ? 'a-dimmed' : 'a-wrong'); }
+    });
+    finishItem(ok, ok ? '✅ Richtig!' : '❌ Falsch! Die Aussage ist <strong>' + (q.r ? 'wahr' : 'falsch') + '</strong>.');
+}
+
+function pickMatchLeft(b) {
+    if (b.classList.contains('m-ok')) return;
+    document.querySelectorAll('.m-chip[data-side="l"]').forEach(x => x.classList.remove('m-sel'));
+    b.classList.add('m-sel');
+    mSel = b;
+}
+
+function pickMatchRight(b) {
+    if (!mSel || b.classList.contains('m-ok')) return;
+    const q = questions[idx];
+    const pair = q.p.find(p => p[0] === mSel.dataset.val);
+    if (pair && pair[1] === b.dataset.val) {
+        mSel.classList.remove('m-sel'); mSel.classList.add('m-ok'); b.classList.add('m-ok');
+        mSel = null; mLeft--;
+        if (mLeft === 0) {
+            document.querySelectorAll('.m-chip').forEach(x => x.disabled = true);
+            const ok = (mErr === 0);
+            const loesung = q.p.map(p => p[0] + ' → ' + p[1]).join(' · ');
+            finishItem(ok, ok ? '✅ Alles richtig zugeordnet!' : '❌ Mit ' + mErr + ' Fehlversuch(en). Richtig ist: <strong>' + esc(loesung) + '</strong>');
+        }
+    } else {
+        mErr++;
+        b.classList.add('m-bad');
+        const sel = mSel;
+        setTimeout(() => { b.classList.remove('m-bad'); if (sel) sel.classList.remove('m-sel'); }, 450);
+        mSel = null;
+    }
+}
+
+function pickOrder(b) {
+    if (b.classList.contains('o-picked')) return;
+    const q = questions[idx];
+    oPick.push(parseInt(b.dataset.i, 10));
+    b.classList.add('o-picked');
+    b.querySelector('.o-num').textContent = oPick.length;
+    if (oPick.length === q.s.length) {
+        document.querySelectorAll('.o-step').forEach(x => x.disabled = true);
+        document.querySelectorAll('.btn-reset').forEach(x => x.style.display = 'none');
+        let ok = true;
+        oPick.forEach((v, pos) => { if (v !== pos) ok = false; });
+        document.querySelectorAll('.o-step').forEach(x => {
+            const pos = oPick.indexOf(parseInt(x.dataset.i, 10));
+            x.classList.add(pos === parseInt(x.dataset.i, 10) ? 'o-ok' : 'o-fail');
+        });
+        const loesung = q.s.map((s, i) => (i+1) + '. ' + s).join('  ');
+        finishItem(ok, ok ? '✅ Richtige Reihenfolge!' : '❌ Nicht ganz. Richtig: <strong>' + esc(loesung) + '</strong>');
+    }
+}
+
+function checkCloze() {
+    const q = questions[idx];
+    const inp = document.getElementById('clozeInput');
+    if (!inp || inp.disabled) return;
+    const val = norm(inp.value);
+    if (!val) return;
+    const ok = q.sol.some(s => norm(s) === val);
+    inp.disabled = true;
+    inp.blur();
+    inp.classList.add(ok ? 'ci-ok' : 'ci-bad');
+    const cb = document.getElementById('clozeBtn');
+    if (cb) cb.style.display = 'none';
+    finishItem(ok, ok ? '✅ Richtig geschrieben!' : '❌ Falsch. Richtig: <strong>' + esc(q.sol[0]) + '</strong>');
+}
+
+function nextQ() {
+    idx++;
+    if (idx >= questions.length) finish(); else render();
+}
+
+function finish() {
+    const total = questions.length;
+    const pct = Math.round((correct/total)*100);
+    const gained = correct*10 + (pct >= 100 ? 50 : 0);
+    save.xp += gained;
+    if (activeMod.id !== 'all' && pct > (save.best[activeMod.id]||0)) save.best[activeMod.id] = pct;
+    updateStreak();
+    writeSave(save);
+    refreshWelcomeStats();
+
+    let icon, title, msg;
+    if (pct>=100){icon='🏆';title='Perfekt!';msg='Alles richtig - das sitzt.';}
+    else if(pct>=80){icon='🌟';title='Super!';msg='Sehr stark, nur Kleinigkeiten fehlen.';}
+    else if(pct>=60){icon='😊';title='Gut gemacht!';msg='Solide - noch eine Runde und es sitzt.';}
+    else{icon='💪';title='Weiter üben!';msg='Spiel das Modul gleich nochmal, du wirst schnell besser.';}
+
+    document.getElementById('rIcon').textContent = icon;
+    document.getElementById('rTitle').textContent = title;
+    document.getElementById('rMsg').textContent = msg;
+    document.getElementById('rScore').textContent = correct + '/' + total;
+    document.getElementById('rPct').textContent = pct + '% richtig';
+    document.getElementById('rXp').textContent = '+' + gained + ' XP';
+
+    const wl = document.getElementById('wrongList');
+    const wi = document.getElementById('wrongItems');
+    if (wrongLog.length) {
+        wi.innerHTML = '';
+        wrongLog.forEach(w => {
+            const d = document.createElement('div');
+            d.className = 'wrong-item';
+            d.textContent = '• ' + w;
+            wi.appendChild(d);
+        });
+        wl.style.display = 'block';
+    } else { wl.style.display = 'none'; }
+
+    show('resultsScreen');
+    setTimeout(() => { document.getElementById('rFill').style.width = pct + '%'; }, 100);
+    if (pct >= 100) confetti();
+}
+
+function confetti() {
+    const colors = ['#7e22ce','#a855f7','#db2777','#f472b6','#fbbf24','#38bdf8'];
+    for (let i = 0; i < 80; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random()*100 + 'vw';
+        c.style.background = colors[Math.floor(Math.random()*colors.length)];
+        c.style.transform = 'rotate(' + (Math.random()*360) + 'deg)';
+        document.body.appendChild(c);
+        const fall = 1200 + Math.random()*1600;
+        const drift = (Math.random()-0.5)*200;
+        c.animate([
+            { transform:'translate(0,0) rotate(0deg)', opacity:1 },
+            { transform:'translate(' + drift + 'px, ' + (window.innerHeight+40) + 'px) rotate(' + (Math.random()*720) + 'deg)', opacity:1 }
+        ], { duration: fall, easing:'cubic-bezier(0.3,0.6,0.7,1)' });
+        setTimeout(() => c.remove(), fall);
+    }
+}
+
+refreshWelcomeStats();
+</script>
+</body>
+</html>
