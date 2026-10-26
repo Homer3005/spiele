@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<title>🚴 Tempo-Quest</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(160deg, #082f49 0%, #0369a1 48%, #38bdf8 100%);
+    color: #1a1a1a;
+}
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px 16px; }
+.card {
+    background: white; border-radius: 28px; padding: 32px 24px;
+    max-width: 460px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25); text-align: center;
+}
+h1 { font-size: 28px; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
+.subtitle { color: #6b7280; font-size: 14px; margin-bottom: 20px; line-height: 1.4; }
+
+/* XP / Streak */
+.stats-bar { display:flex; gap:8px; margin-bottom:18px; }
+.stat-pill { flex:1; background:#f0f9ff; border:1px solid #bae6fd; border-radius:14px; padding:8px 6px; text-align:center; }
+.stat-num { font-size:18px; font-weight:900; color:#0369a1; line-height:1; }
+.stat-lbl { font-size:10px; font-weight:700; color:#0ea5e9; margin-top:3px; }
+
+/* Module */
+.modules-grid { display:grid; grid-template-columns:1fr; gap:10px; margin-bottom:18px; }
+.mod-card {
+    display:flex; align-items:center; gap:14px;
+    background:#f9fafb; border:2px solid #e5e7eb; border-radius:18px;
+    padding:14px 16px; cursor:pointer; text-align:left;
+    font-family:inherit; transition:transform 0.1s, border-color 0.15s;
+}
+.mod-card:active { transform:scale(0.98); }
+.mod-emoji { font-size:28px; flex-shrink:0; }
+.mod-info { flex:1; }
+.mod-name { font-size:15px; font-weight:800; color:#0f172a; display:block; }
+.mod-meta { font-size:11px; color:#9ca3af; font-weight:600; margin-top:2px; display:block; }
+.mod-prog { font-size:12px; font-weight:800; flex-shrink:0; padding:4px 8px; border-radius:99px; }
+.mp-todo { background:#e5e7eb; color:#6b7280; }
+.mp-mid  { background:#fef9c3; color:#a16207; }
+.mp-done { background:#dcfce7; color:#15803d; }
+
+.btn-primary {
+    width: 100%; background: linear-gradient(90deg,#0369a1,#0284c7);
+    color: white; font-size: 17px; font-weight: 800; padding: 16px;
+    border: none; border-radius: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: inherit; transition: transform 0.1s; margin-bottom: 10px;
+}
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity:0.4; }
+.btn-back {
+    width: 100%; background: transparent; color: #6b7280;
+    font-size: 14px; font-weight: 700; padding: 10px;
+    border: none; border-radius: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit;
+}
+
+/* Quiz */
+#quizScreen { align-items: stretch; padding: 16px; justify-content: flex-start; padding-top: 28px; }
+#quizScreen .inner { max-width: 480px; margin: 0 auto; width: 100%; }
+.prog-top { display:flex; justify-content:space-between; color:white; font-size:13px; font-weight:700; margin-bottom:8px; }
+.prog-track { width:100%; height:8px; background:rgba(255,255,255,0.3); border-radius:99px; overflow:hidden; margin-bottom:16px; }
+.prog-fill { height:8px; background:white; border-radius:99px; transition:width 0.4s ease; }
+.quiz-card { background:white; border-radius:24px; padding:24px; box-shadow:0 16px 48px rgba(0,0,0,0.2); }
+.cat-pill {
+    display:inline-flex; align-items:center; gap:6px;
+    border-radius:99px; padding:4px 12px; font-size:11px; font-weight:800;
+    background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd; margin-bottom:12px;
+}
+.type-pill {
+    display:inline-flex; align-items:center; gap:5px; border-radius:99px;
+    padding:4px 10px; font-size:10px; font-weight:800; margin-bottom:12px; margin-left:6px;
+    background:#f1f5f9; color:#0f172a; border:1px solid #cbd5e1;
+}
+.question-text { font-size:19px; font-weight:800; color:#0f172a; line-height:1.4; margin-bottom:18px; }
+.hint-line { font-size:12px; font-weight:700; color:#9ca3af; margin:-10px 0 16px; }
+
+/* Antwort-Buttons (MC / Wahr-Falsch) */
+.answers { display:flex; flex-direction:column; gap:10px; }
+.answer-btn {
+    display:flex; align-items:center; gap:12px; width:100%;
+    background:#f9fafb; border:2px solid #e5e7eb; border-radius:16px;
+    padding:14px 16px; cursor:pointer; text-align:left; font-family:inherit;
+    font-size:15px; font-weight:700; color:#111827; transition:transform 0.1s, border-color 0.15s;
+}
+.answer-btn:active { transform:scale(0.98); }
+.ans-letter {
+    width:28px; height:28px; border-radius:9px; background:#bae6fd; color:#0369a1;
+    display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; flex-shrink:0;
+}
+.ans-text { flex:1; line-height:1.3; }
+.ans-icon { font-size:18px; flex-shrink:0; }
+.a-correct { background:#dcfce7; border-color:#22c55e; }
+.a-wrong   { background:#fee2e2; border-color:#ef4444; }
+.a-dimmed  { opacity:0.45; }
+
+/* Zuordnung */
+.match-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.m-chip {
+    width:100%; background:#f9fafb; border:2px solid #e5e7eb; border-radius:14px;
+    padding:12px 10px; font-family:inherit; font-size:13px; font-weight:700; color:#111827;
+    text-align:left; cursor:pointer; line-height:1.25; margin-bottom:8px; transition:transform 0.1s;
+}
+.m-chip:active { transform:scale(0.98); }
+.m-sel { background:#e0f2fe; border-color:#0ea5e9; }
+.m-ok  { background:#dcfce7; border-color:#22c55e; opacity:0.75; }
+.m-bad { background:#fee2e2; border-color:#ef4444; }
+
+/* Reihenfolge */
+.order-list { display:flex; flex-direction:column; gap:9px; }
+.o-step {
+    display:flex; align-items:center; gap:11px; width:100%;
+    background:#f9fafb; border:2px solid #e5e7eb; border-radius:14px;
+    padding:13px 14px; font-family:inherit; font-size:14px; font-weight:700;
+    color:#111827; text-align:left; cursor:pointer; line-height:1.3; transition:transform 0.1s;
+}
+.o-step:active { transform:scale(0.98); }
+.o-num {
+    width:26px; height:26px; border-radius:99px; flex-shrink:0;
+    background:#e5e7eb; color:#9ca3af;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900;
+}
+.o-picked .o-num { background:#0369a1; color:white; }
+.o-picked { background:#f0f9ff; border-color:#7dd3fc; }
+.o-ok   { background:#dcfce7; border-color:#22c55e; }
+.o-fail { background:#fee2e2; border-color:#ef4444; }
+.btn-reset {
+    width:100%; background:transparent; border:none; color:#9ca3af;
+    font-family:inherit; font-size:13px; font-weight:700; padding:10px; cursor:pointer;
+}
+
+/* Lückentext */
+.cloze-input {
+    width:100%; border:2px solid #e5e7eb; border-radius:16px; background:#f9fafb;
+    padding:15px 16px; font-family:inherit; font-size:18px; font-weight:800; color:#111827;
+    text-align:center; outline:none;
+}
+.cloze-input:focus { border-color:#0ea5e9; background:white; }
+.cloze-input.ci-ok   { border-color:#22c55e; background:#dcfce7; }
+.cloze-input.ci-bad  { border-color:#ef4444; background:#fee2e2; }
+.btn-check {
+    width:100%; margin-top:10px; background:#111827; color:white;
+    font-family:inherit; font-size:15px; font-weight:800; padding:14px;
+    border:none; border-radius:14px; cursor:pointer;
+}
+.btn-check:active { transform:scale(0.98); }
+
+/* Feedback */
+.feedback-box { display:none; margin-top:16px; border-radius:16px; padding:14px 16px; text-align:left; }
+.feedback-box.show { display:block; }
+.fb-correct { background:#f0fdf4; border:1px solid #bbf7d0; }
+.fb-wrong   { background:#fef2f2; border:1px solid #fecaca; }
+.fb-title { font-size:15px; font-weight:900; margin-bottom:5px; }
+.fb-fact  { font-size:13.5px; color:#374151; line-height:1.45; font-weight:600; }
+.btn-next {
+    display:none; width:100%; margin-top:14px;
+    background:linear-gradient(90deg,#0369a1,#0284c7); color:white;
+    font-size:16px; font-weight:800; padding:15px; border:none; border-radius:16px;
+    cursor:pointer; font-family:inherit;
+}
+.btn-next.show { display:block; }
+
+/* Ergebnis */
+.result-icon { font-size:64px; margin-bottom:8px; }
+.result-title { font-size:26px; font-weight:900; color:#0f172a; }
+.result-msg { font-size:14px; color:#6b7280; margin:6px 0 18px; font-weight:600; }
+.result-score { font-size:40px; font-weight:900; color:#0369a1; }
+.result-pct { font-size:14px; color:#6b7280; font-weight:700; margin-bottom:14px; }
+.result-track { width:100%; height:10px; background:#e5e7eb; border-radius:99px; overflow:hidden; margin-bottom:10px; }
+.result-fill { height:10px; background:linear-gradient(90deg,#0369a1,#0284c7); border-radius:99px; width:0; transition:width 0.8s ease; }
+.xp-gain { font-size:15px; font-weight:900; color:#0284c7; margin-bottom:18px; }
+.wrong-list { text-align:left; background:#f9fafb; border:1px solid #e5e7eb; border-radius:16px; padding:14px; margin-bottom:16px; }
+.wrong-head { font-size:12px; font-weight:900; color:#6b7280; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+.wrong-item { font-size:13px; font-weight:700; color:#374151; line-height:1.4; margin-bottom:7px; }
+
+.confetti { position:fixed; top:-10px; width:10px; height:10px; border-radius:2px; z-index:999; pointer-events:none; }
+</style>
+</head>
+<body>
+
+<!-- Start -->
+<div id="welcomeScreen" class="screen active">
+    <div class="card">
+        <div style="font-size:60px;margin-bottom:6px;">🚴</div>
+        <h1>Tempo-Quest</h1>
+        <div class="subtitle">Geschwindigkeit · Physik 8. Klasse<br>6 Module · 5 Aufgabentypen</div>
+        <div class="stats-bar">
+            <div class="stat-pill"><div class="stat-num" id="wXp">0</div><div class="stat-lbl">XP</div></div>
+            <div class="stat-pill"><div class="stat-num" id="wStreak">0</div><div class="stat-lbl">TAGE</div></div>
+            <div class="stat-pill"><div class="stat-num" id="wDone">0/6</div><div class="stat-lbl">MODULE</div></div>
+        </div>
+        <button class="btn-primary" onclick="goModules()">🚀 Los geht's</button>
+    </div>
+</div>
+
+<!-- Module -->
+<div id="modulesScreen" class="screen">
+    <div class="card">
+        <h1>Module</h1>
+        <div class="subtitle">Was willst du üben?</div>
+        <div class="modules-grid" id="modGrid"></div>
+        <button class="btn-primary" onclick="startAll()">🎲 Alles gemischt (25 Fragen)</button>
+        <button class="btn-back" onclick="show('welcomeScreen')">← Zurück</button>
+    </div>
+</div>
+
+<!-- Quiz -->
+<div id="quizScreen" class="screen">
+    <div class="inner">
+        <div class="prog-top">
+            <span id="qCounter">Frage 1 / 8</span>
+            <span id="cCounter">✅ 0 richtig</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+        <div class="quiz-card">
+            <div><span class="cat-pill" id="catPill"></span><span class="type-pill" id="typePill"></span></div>
+            <div class="question-text" id="qText"></div>
+            <div class="hint-line" id="hintLine" style="display:none;"></div>
+            <div id="answerZone"></div>
+            <div class="feedback-box" id="fbBox">
+                <div class="fb-title" id="fbTitle"></div>
+                <div class="fb-fact" id="fbFact"></div>
+            </div>
+            <button class="btn-next" id="nextBtn" onclick="nextQ()"><span id="nextTxt">Weiter ➜</span></button>
+        </div>
+        <button class="btn-back" style="color:rgba(255,255,255,0.85);margin-top:10px;" onclick="goModules()">← Abbrechen</button>
+    </div>
+</div>
+
+<!-- Ergebnis -->
+<div id="resultsScreen" class="screen">
+    <div class="card">
+        <div class="result-icon" id="rIcon"></div>
+        <div class="result-title" id="rTitle"></div>
+        <div class="result-msg" id="rMsg"></div>
+        <div class="result-score" id="rScore"></div>
+        <div class="result-pct" id="rPct"></div>
+        <div class="result-track"><div class="result-fill" id="rFill" style="width:0%"></div></div>
+        <div class="xp-gain" id="rXp"></div>
+        <div class="wrong-list" id="wrongList" style="display:none;">
+            <div class="wrong-head">Das saß noch nicht</div>
+            <div id="wrongItems"></div>
+        </div>
+        <button class="btn-primary" onclick="restartModule()">🔄 Nochmal</button>
+        <button class="btn-back" onclick="goModules()">← Andere Module</button>
+    </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
+
+/* ---------- Persistenz ---------- */
+const SAVE_KEY = 'tempo-quest-v1';
+function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } }
+function writeSave(s) { try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) {} }
+let save = loadSave();
+if (!save.xp) save.xp = 0;
+if (!save.best) save.best = {};
+if (!save.streak) save.streak = 0;
+if (!save.lastPlay) save.lastPlay = null;
+
+function updateStreak() {
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (save.lastPlay === today) { }
+    else if (save.lastPlay === yesterday) { save.streak += 1; save.lastPlay = today; }
+    else { save.streak = 1; save.lastPlay = today; }
+    writeSave(save);
+}
+
+/* ---------- Daten (inline, keine externen Quellen) ----------
+   mc    = Multiple Choice, a[0] ist die richtige Antwort (wird zur Anzeigezeit gemischt)
+   tf    = Wahr/Falsch, r = true bedeutet: die Aussage stimmt
+   match = Zuordnung, p = Paare [links, rechts]
+   order = Reihenfolge, s = Schritte in der richtigen Reihenfolge
+   cloze = Lueckentext zum Tippen, sol = akzeptierte Antworten
+*/
+const MODULE = [
+{ id:"messen", emoji:"📏", name:"Messen & Versuch", fragen:[
+  { t:"mc", q:"Welches Material braucht ihr für den Versuch, die Geschwindigkeit eines Radfahrers zu bestimmen?", a:["Maßband und Stoppuhren","Waage und Thermometer","Lineal und Taschenrechner","Tacho und Kompass"], f:"Material: Maßband und Stoppuhren. Gemessen werden der Weg und die Zeit." },
+  { t:"mc", q:"Wie lang ist die Strecke, die im Versuch abgemessen wird?", a:["30 m","3 m","100 m","75 m"], f:"Es wird eine 30 m lange Strecke abgemessen, die man mit dem Fahrrad gefahrlos fahren kann." },
+  { t:"order", q:"Bringe den Versuch in die richtige Reihenfolge:", s:["Eine 30 m lange Strecke abmessen","Anfang und Ende markieren","Einer fährt die Strecke mit dem Fahrrad, ohne schneller oder langsamer zu werden","Die Zeit messen, die der Radfahrer für die 30 m braucht","Aus Streckenlänge und gemessener Zeit die Geschwindigkeit berechnen"], f:"Erst Strecke abmessen und markieren, dann gleichmäßig fahren, Zeit stoppen und zum Schluss die Geschwindigkeit aus Weg und Zeit berechnen." },
+  { t:"mc", q:"Warum soll der Radfahrer unterwegs nicht schneller oder langsamer werden?", a:["Damit eine gleichförmige Bewegung vorliegt","Damit die Stoppuhr nicht kaputtgeht","Damit er die 30 m sicher schafft","Damit das Maßband gerade bleibt"], f:"Nur wenn er gleichmäßig fährt, legt er in gleichen Zeiten gleich lange Wege zurück - eine gleichförmige Bewegung." },
+  { t:"mc", q:"Welche beiden Größen werden im Versuch gemessen?", a:["Der Weg und die Zeit","Die Masse und die Zeit","Der Weg und die Kraft","Die Zeit und die Temperatur"], f:"Gemessen werden die Streckenlänge (der Weg) und die benötigte Zeit. Daraus wird die Geschwindigkeit berechnet." },
+  { t:"tf", q:"Die Polizei hat verschiedene Möglichkeiten, die Geschwindigkeit zu überprüfen.", r:true, f:"Die Polizei hat verschiedene Möglichkeiten, die Geschwindigkeit zu überprüfen." },
+  { t:"mc", q:"Was wurde bei der Videoanalyse gemacht?", a:["Eine Fahrt mit dem Fahrrad wurde gefilmt und ausgewertet","Ein Auto wurde gewogen","Die Polizei hat geblitzt","Ein Rennpferd wurde gefilmt"], f:"Eine Fahrt mit dem Fahrrad wurde gefilmt und anschließend ausgewertet." },
+  { t:"mc", q:"Was ist im Bild der Videoanalyse markiert?", a:["Der Ort der Vorderachse zu verschiedenen Zeiten","Die Höhe des Fahrrads","Die Temperatur der Straße","Die Größe des Fahrers"], f:"Im Bild ist der Ort der Vorderachse zu verschiedenen Zeiten markiert." },
+  { t:"mc", q:"Wie trägt man die Messwerte in das Diagramm ein?", a:["Waagerecht die Zeit, senkrecht den Weg","Waagerecht den Weg, senkrecht die Zeit","Beides waagerecht","Die Reihenfolge ist egal"], f:"Waagerecht wird die Zeit aufgetragen, senkrecht der Weg." },
+  { t:"mc", q:"Welchen Weg hatte der Radfahrer nach 0,40 s zurückgelegt?", a:["2,61 m","1,30 m","3,90 m","0,40 m"], f:"Aus der Messtabelle: nach 0,40 s sind es 2,61 m." },
+  { t:"mc", q:"Der Radfahrer legt in 1,00 s rund 6,53 m zurück. Wie schnell ist er etwa?", a:["Etwa 6,5 m/s","Etwa 6,5 km/h","Etwa 65 m/s","Etwa 1,0 m/s"], f:"Geschwindigkeit ist Weg durch Zeit: 6,53 m geteilt durch 1,00 s sind rund 6,5 m/s." },
+  { t:"cloze", q:"Das Messgerät, mit dem man im Versuch die Zeit misst, heißt ___.", sol:["stoppuhr","stoppuhren"], f:"Die Zeit wird mit einer Stoppuhr gemessen, die Strecke mit dem Maßband." },
+]},
+
+{ id:"gleich", emoji:"🚗", name:"Gleichförmige Bewegung", fragen:[
+  { t:"cloze", q:"Werden in gleichen Zeiten gleich lange Wege zurückgelegt, liegt eine ___ Bewegung vor.", sol:["gleichförmige","gleichformige","gleichförmig"], f:"Wenn in gleichen Zeiten gleich lange Wege zurückgelegt werden, liegt eine gleichförmige Bewegung vor." },
+  { t:"mc", q:"Was gilt bei einer gleichförmigen Bewegung für Weg und Zeit?", a:["Der Weg ist direkt proportional zur Zeit","Der Weg nimmt immer schneller zu","Die Zeit ist proportional zur Geschwindigkeit","Weg und Zeit hängen nicht zusammen"], f:"Der Weg ist dann direkt proportional zur Zeit. Man schreibt das als s ~ t." },
+  { t:"tf", q:"Bei einer gleichförmigen Bewegung verdoppelt sich der Weg, wenn sich die Zeit verdoppelt.", r:true, f:"Direkte Proportionalität heißt: doppelte Zeit, doppelter Weg." },
+  { t:"mc", q:"Wie weit fuhr das Auto in der Messung nach 1,0 s?", a:["15 m","31 m","46 m","80 m"], f:"Nach 1,0 s waren es 15 m. Das Auto fuhr in jeder Sekunde rund 16 m weit." },
+  { t:"mc", q:"Wie weit war das Auto nach 5,0 s gekommen?", a:["80 m","63 m","46 m","100 m"], f:"Nach 5,0 s hatte das Auto 80 m zurückgelegt." },
+  { t:"mc", q:"Wie groß ist bei der Autofahrt der Quotient aus Weg und Zeit?", a:["Stets rund 16 m/s","Stets rund 16 km/h","Er wird immer größer","Er wird immer kleiner"], f:"Der Quotient aus Weg und Zeit beträgt bei der Autofahrt stets rund 16 m/s. Genau das ist die Geschwindigkeit." },
+  { t:"match", q:"Ordne der Zeit den zurückgelegten Weg zu (Autofahrt):", p:[["1,0 s","15 m"],["2,0 s","31 m"],["3,0 s","46 m"],["5,0 s","80 m"]], f:"Die Messwerte der Autofahrt: 15 m, 31 m, 46 m, 63 m und 80 m nach 1 bis 5 Sekunden." },
+  { t:"tf", q:"Bei der Autofahrt ist der Wert von Weg geteilt durch Zeit bei jeder Messung ungefähr gleich.", r:true, f:"Genau daran erkennt man die gleichförmige Bewegung: der Quotient bleibt rund 16 m/s." },
+  { t:"mc", q:"Was bedeutet die Schreibweise s ~ t?", a:["Weg und Zeit sind direkt proportional","Weg und Zeit sind gleich groß","Der Weg ist ungefähr die Zeit","Die Zeit hängt vom Weg ab"], f:"s ~ t heißt: der Weg ist direkt proportional zur Zeit." },
+  { t:"mc", q:"Das Auto fährt in jeder Sekunde rund 16 m. Wie weit kommt es in 3 s?", a:["Rund 48 m","Rund 32 m","Rund 16 m","Rund 160 m"], f:"In 2 s sind es etwa 32 m, in 3 s rund 48 m." },
+]},
+
+{ id:"rechnen", emoji:"🧮", name:"Geschwindigkeit berechnen", fragen:[
+  { t:"cloze", q:"Die Geschwindigkeit ist der Quotient aus Weg und ___.", sol:["zeit"], f:"Geschwindigkeit = Weg geteilt durch Zeit." },
+  { t:"mc", q:"Welche Formel gilt für die Geschwindigkeit?", a:["v = s geteilt durch t","v = t geteilt durch s","v = s mal t","v = s plus t"], f:"Geschwindigkeit = Weg durch Zeit, also v = s/t." },
+  { t:"mc", q:"Max läuft 75 m in 12,5 s. Wie schnell ist er?", a:["6 m/s","7,5 m/s","12,5 m/s","60 m/s"], f:"75 m geteilt durch 12,5 s sind 6 m/s." },
+  { t:"mc", q:"Toni läuft 100 m in 16,0 s. Wie schnell ist er?", a:["6,25 m/s","6 m/s","16 m/s","10 m/s"], f:"100 m geteilt durch 16,0 s sind 6,25 m/s." },
+  { t:"mc", q:"Wer war schneller, Max oder Toni?", a:["Toni, mit 6,25 m/s gegenüber 6 m/s","Max, weil er weniger Zeit gebraucht hat","Beide gleich schnell","Das kann man nicht entscheiden"], f:"Toni ist schneller: 6,25 m/s gegenüber 6 m/s. Die kürzere Zeit allein sagt nichts aus, weil die Strecken unterschiedlich lang waren." },
+  { t:"mc", q:"Jemand sagt: Max war schneller, weil er weniger Zeit gebraucht hat. Stimmt das?", a:["Nein, die beiden sind unterschiedlich weit gelaufen","Ja, wer weniger Zeit braucht, ist schneller","Ja, denn 12,5 s sind weniger als 16,0 s","Nur wenn beide gleich schwer sind"], f:"Zeiten darf man nur vergleichen, wenn die Strecken gleich lang sind. Hier lief Max nur 75 m, Toni 100 m." },
+  { t:"mc", q:"Wie ermittelt man aus Messwerten, wer schneller war?", a:["Für jeden den Weg durch die Zeit teilen und die Werte vergleichen","Die Zeiten vergleichen","Die Wege vergleichen","Weg und Zeit addieren"], f:"Man berechnet für beide die Geschwindigkeit, also Weg geteilt durch Zeit, und vergleicht diese Werte." },
+  { t:"mc", q:"Ein Auto fährt 80 m in 4,0 s. Wie schnell ist es?", a:["20 m/s","16 m/s","24 m/s","32 m/s"], f:"80 m geteilt durch 4,0 s sind 20 m/s." },
+  { t:"mc", q:"Ein Radfahrer braucht für 30 m genau 6,0 s. Wie schnell ist er?", a:["5 m/s","6 m/s","0,2 m/s","180 m/s"], f:"30 m geteilt durch 6,0 s sind 5 m/s." },
+  { t:"mc", q:"Ein Auto fährt mit 16 m/s. Wie weit kommt es in 10 s?", a:["160 m","1,6 m","26 m","60 m"], f:"Weg = Geschwindigkeit mal Zeit: 16 m/s mal 10 s sind 160 m." },
+  { t:"mc", q:"Wie berechnet man die Zeit, wenn Weg und Geschwindigkeit bekannt sind?", a:["t = s geteilt durch v","t = s mal v","t = v geteilt durch s","t = v plus s"], f:"Aus v = s/t folgt t = s/v." },
+  { t:"tf", q:"Für eine Geschwindigkeit braucht man immer zwei Angaben: einen Weg und eine Zeit.", r:true, f:"Die Geschwindigkeit ist der Quotient aus Weg und Zeit - ohne beide Angaben geht es nicht." },
+]},
+
+{ id:"einheiten", emoji:"🔁", name:"Einheiten umrechnen", fragen:[
+  { t:"cloze", q:"1 m/s sind ___ km/h. (Zahl eintippen)", sol:["3,6","3.6"], f:"1 m/s = 3,6 km/h. In einer Stunde sind es 3600 m, also 3,6 km." },
+  { t:"mc", q:"Wie viele Meter sind ein Kilometer?", a:["1000 m","100 m","3600 m","10 m"], f:"1 km sind 1000 m." },
+  { t:"mc", q:"Wie viele Sekunden hat eine Stunde?", a:["3600 s","60 s","1000 s","360 s"], f:"Eine Stunde hat 60 Minuten mit je 60 Sekunden, also 3600 s." },
+  { t:"mc", q:"Wie rechnet man von m/s in km/h um?", a:["Mal 3,6","Geteilt durch 3,6","Mal 1000","Geteilt durch 60"], f:"Von m/s nach km/h wird mit 3,6 multipliziert." },
+  { t:"mc", q:"Wie rechnet man von km/h in m/s um?", a:["Geteilt durch 3,6","Mal 3,6","Mal 60","Geteilt durch 1000"], f:"Von km/h nach m/s wird durch 3,6 geteilt." },
+  { t:"mc", q:"Das Auto fährt 16 m/s. Wie viel ist das in km/h?", a:["57,6 km/h","16 km/h","44,4 km/h","160 km/h"], f:"16 mal 3,6 ergibt 57,6 km/h." },
+  { t:"mc", q:"20 m/s sind wie viel km/h?", a:["72 km/h","56 km/h","20 km/h","200 km/h"], f:"20 mal 3,6 ergibt 72 km/h." },
+  { t:"mc", q:"Ein Rennpferd erreicht 90 km/h. Wie viel ist das in m/s?", a:["25 m/s","324 m/s","9 m/s","36 m/s"], f:"90 geteilt durch 3,6 ergibt 25 m/s." },
+  { t:"mc", q:"54 km/h sind wie viel m/s?", a:["15 m/s","54 m/s","194 m/s","5,4 m/s"], f:"54 geteilt durch 3,6 ergibt 15 m/s." },
+  { t:"match", q:"Ordne die gleichen Geschwindigkeiten einander zu:", p:[["1 m/s","3,6 km/h"],["10 m/s","36 km/h"],["20 m/s","72 km/h"],["25 m/s","90 km/h"]], f:"Umrechnung immer mit dem Faktor 3,6 zwischen m/s und km/h." },
+  { t:"mc", q:"In welchen Einheiten wird die Geschwindigkeit angegeben?", a:["In Metern pro Sekunde oder Kilometern pro Stunde","Nur in Metern","In Sekunden","In Kilogramm pro Stunde"], f:"Die Geschwindigkeit wird in Metern pro Sekunde (m/s) oder in Kilometern pro Stunde (km/h) angegeben." },
+]},
+
+{ id:"diagramm", emoji:"📈", name:"Zeit-Weg-Diagramm", fragen:[
+  { t:"mc", q:"Was wird im Zeit-Weg-Diagramm waagerecht aufgetragen?", a:["Die Zeit","Der Weg","Die Geschwindigkeit","Die Einheit"], f:"Waagerecht steht die Zeit, senkrecht der Weg." },
+  { t:"mc", q:"Was wird senkrecht aufgetragen?", a:["Der Weg","Die Zeit","Die Geschwindigkeit","Die Masse"], f:"Senkrecht steht der Weg." },
+  { t:"mc", q:"Wie liegen die Messpunkte bei einer gleichförmigen Bewegung?", a:["Auf einer Strecke, also einer Geraden","Auf einer Kurve nach oben","Kreuz und quer verteilt","Auf einer Kurve nach unten"], f:"Bei gleichförmigen Bewegungen liegen die Messpunkte auf einer Strecke." },
+  { t:"cloze", q:"Diese Gerade beginnt bei einer gleichförmigen Bewegung im ___.", sol:["ursprung","nullpunkt"], f:"Die Gerade beginnt im Ursprung, denn zur Zeit null ist auch der Weg null." },
+  { t:"mc", q:"Nach welcher Zeit hatte das Auto etwa 63 m zurückgelegt?", a:["Nach 4,0 s","Nach 3,0 s","Nach 5,0 s","Nach 2,0 s"], f:"Aus der Tabelle: nach 4,0 s sind es 63 m." },
+  { t:"order", q:"Bringe das Zeichnen des Zeit-Weg-Diagramms in die richtige Reihenfolge:", s:["Die waagerechte Achse mit der Zeit beschriften","Die senkrechte Achse mit dem Weg beschriften","Die Messpunkte aus der Tabelle eintragen","Die Punkte durch eine Gerade verbinden"], f:"Erst die Achsen beschriften, dann die Messpunkte eintragen und zuletzt verbinden." },
+  { t:"tf", q:"Wenn die Messpunkte auf einer Geraden durch den Ursprung liegen, war die Bewegung gleichförmig.", r:true, f:"Genau daran erkennt man im Diagramm eine gleichförmige Bewegung." },
+  { t:"mc", q:"Welche Werte stehen bei der Autofahrt im Diagramm auf der Zeitachse?", a:["0 bis 5,0 Sekunden","0 bis 80 Meter","0 bis 16 m/s","0 bis 60 Minuten"], f:"Die Autofahrt wurde über 5 Sekunden aufgezeichnet, der Weg betrug am Ende 80 m." },
+]},
+
+{ id:"anwenden", emoji:"🧠", name:"Anwenden", fragen:[
+  { t:"mc", q:"Ist die Geschwindigkeit eine Grundgröße?", a:["Nein, sie wird aus den Größen Weg und Zeit berechnet","Ja, sie ist eine eigene Grundgröße","Ja, weil sie eine eigene Einheit hat","Nur in km/h"], f:"Die Geschwindigkeit ist der Quotient aus zwei Größen, Weg und Zeit. Sie wird also aus anderen Größen abgeleitet." },
+  { t:"mc", q:"Ein zweites Auto fährt 80 m in 4,0 s, unser erstes brauchte dafür 5,0 s. Vergleich ohne Rechnung?", a:["Das zweite Auto ist schneller, es schafft denselben Weg in kürzerer Zeit","Das erste Auto ist schneller","Beide sind gleich schnell","Ohne Rechnung geht das nicht"], f:"Bei gleichem Weg ist schneller, wer weniger Zeit braucht - hier das zweite Auto." },
+  { t:"mc", q:"Und mit Rechnung: wie groß ist der Unterschied?", a:["20 m/s gegenüber 16 m/s","16 m/s gegenüber 20 m/s","20 km/h gegenüber 16 km/h","Beide 16 m/s"], f:"80 m in 4,0 s sind 20 m/s, das erste Auto fuhr rund 16 m/s." },
+  { t:"tf", q:"Je steiler die Gerade im Zeit-Weg-Diagramm verläuft, desto größer ist die Geschwindigkeit.", r:true, f:"Eine steilere Gerade bedeutet: in derselben Zeit wird ein größerer Weg zurückgelegt. Der Quotient aus Weg und Zeit ist also größer." },
+  { t:"mc", q:"Ein Rennpferd galoppiert mit 90 km/h. Wie viele Meter schafft es in einer Sekunde?", a:["25 m","9 m","90 m","36 m"], f:"90 km/h sind 25 m/s, also 25 Meter in jeder Sekunde." },
+  { t:"mc", q:"Zwei Läufer laufen unterschiedlich lange Strecken. Was musst du tun, um sie zu vergleichen?", a:["Für beide die Geschwindigkeit berechnen","Nur die Zeiten vergleichen","Nur die Strecken vergleichen","Die Zeiten addieren"], f:"Nur die Geschwindigkeit, also Weg geteilt durch Zeit, macht unterschiedliche Strecken vergleichbar." },
+  { t:"mc", q:"Der Radfahrer aus der Videoanalyse fährt rund 6,5 m/s. Wie viel km/h sind das etwa?", a:["Rund 23 km/h","Rund 6,5 km/h","Rund 65 km/h","Rund 2 km/h"], f:"6,5 mal 3,6 ergibt rund 23 km/h." },
+  { t:"mc", q:"Warum reicht die gestoppte Zeit allein nicht aus, um zu sagen, wer schneller war?", a:["Weil die zurückgelegten Wege unterschiedlich lang sein können","Weil Stoppuhren ungenau sind","Weil die Zeit keine Einheit hat","Weil man immer km/h braucht"], f:"Nur bei gleich langen Wegen entscheidet die Zeit. Sonst muss man Weg durch Zeit rechnen." },
+]},
+];
+
+/* ---------- Spiel-Logik ---------- */
+let activeMod = null, questions = [], idx = 0, correct = 0, wrongLog = [];
+let mSel = null, mErr = 0, mLeft = 0, oPick = [];
+
+const TYPE_LABEL = { mc:"🔘 Auswahl", tf:"⚖️ Wahr oder falsch", match:"🔗 Zuordnen", order:"🔢 Reihenfolge", cloze:"⌨️ Eintippen" };
+
+function shuffleIndices(n) {
+    const a = Array.from({length:n}, (_, i) => i);
+    for (let i = a.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+}
+function shuffled(arr) { return shuffleIndices(arr.length).map(i => arr[i]); }
+
+/* Pflicht-Shuffle: richtige Antwort darf nie an fester Position stehen */
+function prepareQuestion(q) {
+    if (q.t === "mc") {
+        const order = shuffleIndices(q.a.length);
+        return { t:"mc", q:q.q, f:q.f, a:order.map(i => q.a[i]), c:order.indexOf(0) };
+    }
+    if (q.t === "match") {
+        return { t:"match", q:q.q, f:q.f, p:q.p, left:shuffled(q.p.map(x => x[0])), right:shuffled(q.p.map(x => x[1])) };
+    }
+    if (q.t === "order") {
+        return { t:"order", q:q.q, f:q.f, s:q.s, disp:shuffled(q.s.map((v,i) => ({v:v, i:i}))) };
+    }
+    return Object.assign({}, q);
+}
+
+function norm(s) {
+    return String(s).toLowerCase().trim()
+        .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+        .replace(/[^a-z0-9]/g,"");
+}
+
+function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+}
+
+function refreshWelcomeStats() {
+    document.getElementById('wXp').textContent = save.xp;
+    document.getElementById('wStreak').textContent = save.streak;
+    const done = MODULE.filter(m => (save.best[m.id]||0) >= 100).length;
+    document.getElementById('wDone').textContent = done + "/" + MODULE.length;
+}
+
+function goModules() {
+    const grid = document.getElementById('modGrid');
+    grid.innerHTML = '';
+    MODULE.forEach(m => {
+        const best = save.best[m.id] || 0;
+        let cls = 'mp-todo', label = 'Neu';
+        if (best >= 100) { cls = 'mp-done'; label = '100% ✓'; }
+        else if (best > 0) { cls = 'mp-mid'; label = best + '%'; }
+        const card = document.createElement('button');
+        card.className = 'mod-card';
+        card.onclick = () => startModule(m.id);
+        card.innerHTML =
+            '<span class="mod-emoji">' + m.emoji + '</span>' +
+            '<span class="mod-info"><span class="mod-name">' + m.name + '</span>' +
+            '<span class="mod-meta">' + m.fragen.length + ' Aufgaben</span></span>' +
+            '<span class="mod-prog ' + cls + '">' + label + '</span>';
+        grid.appendChild(card);
+    });
+    show('modulesScreen');
+}
+
+function startModule(modId) {
+    activeMod = MODULE.find(m => m.id === modId);
+    const order = shuffleIndices(activeMod.fragen.length);
+    questions = order.map(i => prepareQuestion(activeMod.fragen[i]));
+    idx = 0; correct = 0; wrongLog = [];
+    show('quizScreen');
+    render();
+}
+
+function startAll() {
+    const pool = [];
+    MODULE.forEach(m => m.fragen.forEach(q => pool.push(q)));
+    const order = shuffleIndices(pool.length).slice(0, 25);
+    activeMod = { id:"all", emoji:"🎲", name:"Alles gemischt", fragen:pool };
+    questions = order.map(i => prepareQuestion(pool[i]));
+    idx = 0; correct = 0; wrongLog = [];
+    show('quizScreen');
+    render();
+}
+
+function restartModule() {
+    if (!activeMod) return;
+    if (activeMod.id === "all") startAll(); else startModule(activeMod.id);
+}
+
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function render() {
+    const q = questions[idx];
+    const total = questions.length;
+    mSel = null; mErr = 0; oPick = [];
+
+    document.getElementById('qCounter').textContent = 'Frage ' + (idx+1) + ' / ' + total;
+    document.getElementById('cCounter').textContent = '✅ ' + correct + ' richtig';
+    document.getElementById('progFill').style.width = ((idx/total)*100) + '%';
+    document.getElementById('catPill').textContent = activeMod.emoji + ' ' + activeMod.name;
+    document.getElementById('typePill').textContent = TYPE_LABEL[q.t];
+    document.getElementById('qText').textContent = q.q;
+
+    const hint = document.getElementById('hintLine');
+    const zone = document.getElementById('answerZone');
+    zone.innerHTML = '';
+    hint.style.display = 'none';
+
+    if (q.t === 'mc') {
+        const div = document.createElement('div');
+        div.className = 'answers';
+        q.a.forEach((ans, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'answer-btn';
+            btn.innerHTML = '<span class="ans-letter">' + String.fromCharCode(65+i) + '</span>' +
+                            '<span class="ans-text">' + esc(ans) + '</span><span class="ans-icon"></span>';
+            btn.onclick = () => pickMC(i);
+            div.appendChild(btn);
+        });
+        zone.appendChild(div);
+    }
+
+    if (q.t === 'tf') {
+        const div = document.createElement('div');
+        div.className = 'answers';
+        [['Wahr','✅'],['Falsch','❌']].forEach((o, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'answer-btn';
+            btn.innerHTML = '<span class="ans-letter">' + o[1] + '</span>' +
+                            '<span class="ans-text">' + o[0] + '</span><span class="ans-icon"></span>';
+            btn.onclick = () => pickTF(i === 0);
+            div.appendChild(btn);
+        });
+        zone.appendChild(div);
+    }
+
+    if (q.t === 'match') {
+        hint.textContent = 'Erst links antippen, dann rechts den passenden Partner.';
+        hint.style.display = 'block';
+        mLeft = q.p.length;
+        const grid = document.createElement('div');
+        grid.className = 'match-grid';
+        const colL = document.createElement('div');
+        const colR = document.createElement('div');
+        q.left.forEach(txt => {
+            const b = document.createElement('button');
+            b.className = 'm-chip'; b.textContent = txt; b.dataset.val = txt; b.dataset.side = 'l';
+            b.onclick = () => pickMatchLeft(b);
+            colL.appendChild(b);
+        });
+        q.right.forEach(txt => {
+            const b = document.createElement('button');
+            b.className = 'm-chip'; b.textContent = txt; b.dataset.val = txt; b.dataset.side = 'r';
+            b.onclick = () => pickMatchRight(b);
+            colR.appendChild(b);
+        });
+        grid.appendChild(colL); grid.appendChild(colR);
+        zone.appendChild(grid);
+    }
+
+    if (q.t === 'order') {
+        hint.textContent = 'Tippe die Schritte in der richtigen Reihenfolge an.';
+        hint.style.display = 'block';
+        const list = document.createElement('div');
+        list.className = 'order-list';
+        q.disp.forEach(step => {
+            const b = document.createElement('button');
+            b.className = 'o-step'; b.dataset.i = step.i;
+            b.innerHTML = '<span class="o-num">·</span><span>' + esc(step.v) + '</span>';
+            b.onclick = () => pickOrder(b);
+            list.appendChild(b);
+        });
+        zone.appendChild(list);
+        const rst = document.createElement('button');
+        rst.className = 'btn-reset'; rst.textContent = '↺ Nochmal sortieren';
+        rst.onclick = () => render();
+        zone.appendChild(rst);
+    }
+
+    if (q.t === 'cloze') {
+        const inp = document.createElement('input');
+        inp.className = 'cloze-input'; inp.id = 'clozeInput';
+        inp.type = 'text'; inp.autocomplete = 'off'; inp.autocapitalize = 'off';
+        inp.autocorrect = 'off'; inp.spellcheck = false;
+        inp.placeholder = 'Antwort eintippen';
+        inp.setAttribute('enterkeyhint','go');
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkCloze(); });
+        zone.appendChild(inp);
+        const btn = document.createElement('button');
+        btn.className = 'btn-check'; btn.id = 'clozeBtn'; btn.textContent = 'Prüfen';
+        btn.onclick = () => checkCloze();
+        zone.appendChild(btn);
+    }
+
+    document.getElementById('fbBox').className = 'feedback-box';
+    document.getElementById('nextBtn').className = 'btn-next';
+}
+
+function finishItem(ok, titleHtml) {
+    if (ok) correct++; else wrongLog.push(questions[idx].q);
+    document.getElementById('cCounter').textContent = '✅ ' + correct + ' richtig';
+    const fb = document.getElementById('fbBox');
+    const title = document.getElementById('fbTitle');
+    fb.className = 'feedback-box show ' + (ok ? 'fb-correct' : 'fb-wrong');
+    title.innerHTML = titleHtml;
+    title.style.color = ok ? '#15803d' : '#b91c1c';
+    document.getElementById('fbFact').textContent = questions[idx].f;
+    document.getElementById('nextBtn').className = 'btn-next show';
+    document.getElementById('nextTxt').textContent = (idx+1 >= questions.length) ? '🏆 Ergebnis sehen!' : 'Weiter ➜';
+}
+
+function pickMC(sel) {
+    const q = questions[idx];
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(b => b.disabled = true);
+    const ok = sel === q.c;
+    btns.forEach((b, i) => {
+        if (i === q.c) { b.classList.add('a-correct'); b.querySelector('.ans-icon').textContent = '✅'; }
+        else if (i === sel && !ok) { b.classList.add('a-wrong'); b.querySelector('.ans-icon').textContent = '❌'; }
+        else { b.classList.add('a-dimmed'); }
+    });
+    finishItem(ok, ok ? '✅ Richtig!' : '❌ Falsch! Richtig: <strong>' + esc(q.a[q.c]) + '</strong>');
+}
+
+function pickTF(saidTrue) {
+    const q = questions[idx];
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(b => b.disabled = true);
+    const ok = (saidTrue === q.r);
+    const rightIdx = q.r ? 0 : 1;
+    btns.forEach((b, i) => {
+        if (i === rightIdx) { b.classList.add('a-correct'); b.querySelector('.ans-icon').textContent = '✅'; }
+        else { b.classList.add(ok ? 'a-dimmed' : 'a-wrong'); }
+    });
+    finishItem(ok, ok ? '✅ Richtig!' : '❌ Falsch! Die Aussage ist <strong>' + (q.r ? 'wahr' : 'falsch') + '</strong>.');
+}
+
+function pickMatchLeft(b) {
+    if (b.classList.contains('m-ok')) return;
+    document.querySelectorAll('.m-chip[data-side="l"]').forEach(x => x.classList.remove('m-sel'));
+    b.classList.add('m-sel');
+    mSel = b;
+}
+
+function pickMatchRight(b) {
+    if (!mSel || b.classList.contains('m-ok')) return;
+    const q = questions[idx];
+    const pair = q.p.find(p => p[0] === mSel.dataset.val);
+    if (pair && pair[1] === b.dataset.val) {
+        mSel.classList.remove('m-sel'); mSel.classList.add('m-ok'); b.classList.add('m-ok');
+        mSel = null; mLeft--;
+        if (mLeft === 0) {
+            document.querySelectorAll('.m-chip').forEach(x => x.disabled = true);
+            const ok = (mErr === 0);
+            const loesung = q.p.map(p => p[0] + ' → ' + p[1]).join(' · ');
+            finishItem(ok, ok ? '✅ Alles richtig zugeordnet!' : '❌ Mit ' + mErr + ' Fehlversuch(en). Richtig ist: <strong>' + esc(loesung) + '</strong>');
+        }
+    } else {
+        mErr++;
+        b.classList.add('m-bad');
+        const sel = mSel;
+        setTimeout(() => { b.classList.remove('m-bad'); if (sel) sel.classList.remove('m-sel'); }, 450);
+        mSel = null;
+    }
+}
+
+function pickOrder(b) {
+    if (b.classList.contains('o-picked')) return;
+    const q = questions[idx];
+    oPick.push(parseInt(b.dataset.i, 10));
+    b.classList.add('o-picked');
+    b.querySelector('.o-num').textContent = oPick.length;
+    if (oPick.length === q.s.length) {
+        document.querySelectorAll('.o-step').forEach(x => x.disabled = true);
+        document.querySelectorAll('.btn-reset').forEach(x => x.style.display = 'none');
+        let ok = true;
+        oPick.forEach((v, pos) => { if (v !== pos) ok = false; });
+        document.querySelectorAll('.o-step').forEach(x => {
+            const pos = oPick.indexOf(parseInt(x.dataset.i, 10));
+            x.classList.add(pos === parseInt(x.dataset.i, 10) ? 'o-ok' : 'o-fail');
+        });
+        const loesung = q.s.map((s, i) => (i+1) + '. ' + s).join('  ');
+        finishItem(ok, ok ? '✅ Richtige Reihenfolge!' : '❌ Nicht ganz. Richtig: <strong>' + esc(loesung) + '</strong>');
+    }
+}
+
+function checkCloze() {
+    const q = questions[idx];
+    const inp = document.getElementById('clozeInput');
+    if (!inp || inp.disabled) return;
+    const val = norm(inp.value);
+    if (!val) return;
+    const ok = q.sol.some(s => norm(s) === val);
+    inp.disabled = true;
+    inp.blur();
+    inp.classList.add(ok ? 'ci-ok' : 'ci-bad');
+    const cb = document.getElementById('clozeBtn');
+    if (cb) cb.style.display = 'none';
+    finishItem(ok, ok ? '✅ Richtig geschrieben!' : '❌ Falsch. Richtig: <strong>' + esc(q.sol[0]) + '</strong>');
+}
+
+function nextQ() {
+    idx++;
+    if (idx >= questions.length) finish(); else render();
+}
+
+function finish() {
+    const total = questions.length;
+    const pct = Math.round((correct/total)*100);
+    const gained = correct*10 + (pct >= 100 ? 50 : 0);
+    save.xp += gained;
+    if (activeMod.id !== 'all' && pct > (save.best[activeMod.id]||0)) save.best[activeMod.id] = pct;
+    updateStreak();
+    writeSave(save);
+    refreshWelcomeStats();
+
+    let icon, title, msg;
+    if (pct>=100){icon='🏆';title='Perfekt!';msg='Alles richtig - das sitzt.';}
+    else if(pct>=80){icon='🌟';title='Super!';msg='Sehr stark, nur Kleinigkeiten fehlen.';}
+    else if(pct>=60){icon='😊';title='Gut gemacht!';msg='Solide - noch eine Runde und es sitzt.';}
+    else{icon='💪';title='Weiter üben!';msg='Spiel das Modul gleich nochmal, du wirst schnell besser.';}
+
+    document.getElementById('rIcon').textContent = icon;
+    document.getElementById('rTitle').textContent = title;
+    document.getElementById('rMsg').textContent = msg;
+    document.getElementById('rScore').textContent = correct + '/' + total;
+    document.getElementById('rPct').textContent = pct + '% richtig';
+    document.getElementById('rXp').textContent = '+' + gained + ' XP';
+
+    const wl = document.getElementById('wrongList');
+    const wi = document.getElementById('wrongItems');
+    if (wrongLog.length) {
+        wi.innerHTML = '';
+        wrongLog.forEach(w => {
+            const d = document.createElement('div');
+            d.className = 'wrong-item';
+            d.textContent = '• ' + w;
+            wi.appendChild(d);
+        });
+        wl.style.display = 'block';
+    } else { wl.style.display = 'none'; }
+
+    show('resultsScreen');
+    setTimeout(() => { document.getElementById('rFill').style.width = pct + '%'; }, 100);
+    if (pct >= 100) confetti();
+}
+
+function confetti() {
+    const colors = ['#0369a1','#0ea5e9','#0284c7','#38bdf8','#fbbf24','#22c55e'];
+    for (let i = 0; i < 80; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti';
+        c.style.left = Math.random()*100 + 'vw';
+        c.style.background = colors[Math.floor(Math.random()*colors.length)];
+        c.style.transform = 'rotate(' + (Math.random()*360) + 'deg)';
+        document.body.appendChild(c);
+        const fall = 1200 + Math.random()*1600;
+        const drift = (Math.random()-0.5)*200;
+        c.animate([
+            { transform:'translate(0,0) rotate(0deg)', opacity:1 },
+            { transform:'translate(' + drift + 'px, ' + (window.innerHeight+40) + 'px) rotate(' + (Math.random()*720) + 'deg)', opacity:1 }
+        ], { duration: fall, easing:'cubic-bezier(0.3,0.6,0.7,1)' });
+        setTimeout(() => c.remove(), fall);
+    }
+}
+
+refreshWelcomeStats();
+</script>
+</body>
+</html>
