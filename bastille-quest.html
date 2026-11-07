@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#4c1d95">
+<title>Bastille-Quest</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg1:#3b1278; --bg2:#7e22ce; --bg3:#be185d;
+  --ink:#1a1333; --ink2:#5b5473; --ink3:#8e88a3;
+  --card:#ffffff; --line:#ece9f5;
+  --acc:#7c3aed; --acc2:#db2777;
+  --ok:#16a34a; --okbg:#eafaf0; --bad:#dc2626; --badbg:#fdecec;
+}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  color:var(--ink);
+  background:linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 55%,var(--bg3) 100%);
+  background-attachment:fixed;
+  min-height:100%;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:24px 16px calc(32px + env(safe-area-inset-bottom));
+}
+.app{width:100%;max-width:480px}
+.screen{display:none;animation:in .25s ease}
+.screen.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.card{background:var(--card);border-radius:26px;padding:28px 22px;box-shadow:0 24px 60px rgba(25,8,60,.32)}
+
+/* ---------- START ---------- */
+.crest{font-size:52px;text-align:center;line-height:1}
+h1{text-align:center;font-size:30px;font-weight:800;letter-spacing:-.6px;margin-top:10px}
+.sub{text-align:center;color:var(--ink2);font-size:14px;margin-top:6px;line-height:1.5}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0 18px}
+.stat{background:#faf8ff;border:1px solid var(--line);border-radius:16px;padding:12px 6px;text-align:center}
+.stat b{display:block;font-size:19px;font-weight:800;color:var(--acc)}
+.stat span{display:block;font-size:10px;font-weight:700;letter-spacing:.9px;color:var(--ink3);margin-top:3px}
+.btn{
+  display:block;width:100%;border:0;cursor:pointer;
+  background:linear-gradient(90deg,var(--acc),var(--acc2));
+  color:#fff;font-size:17px;font-weight:800;
+  padding:17px;border-radius:16px;
+  box-shadow:0 10px 26px rgba(124,58,237,.38);
+  transition:transform .12s ease
+}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:none;color:var(--ink2);box-shadow:none;font-size:14px;font-weight:700;padding:14px}
+
+/* ---------- MODULE ---------- */
+h2{text-align:center;font-size:25px;font-weight:800;letter-spacing:-.4px}
+.mods{margin:18px 0 14px;display:flex;flex-direction:column;gap:10px}
+.mod{
+  display:flex;align-items:center;gap:13px;width:100%;
+  background:#fff;border:1px solid var(--line);border-radius:17px;
+  padding:14px 15px;cursor:pointer;text-align:left;
+  box-shadow:0 2px 8px rgba(30,10,70,.05);transition:transform .12s ease
+}
+.mod:active{transform:scale(.985)}
+.mod .ic{font-size:23px;width:30px;text-align:center;flex:0 0 auto}
+.mod .tx{flex:1;min-width:0}
+.mod .tx b{display:block;font-size:15px;font-weight:800;color:var(--ink)}
+.mod .tx span{display:block;font-size:12px;color:var(--ink3);margin-top:2px}
+.badge{font-size:10px;font-weight:800;letter-spacing:.5px;padding:5px 9px;border-radius:999px;background:#f3f0ff;color:var(--acc);flex:0 0 auto}
+.badge.done{background:var(--okbg);color:var(--ok)}
+
+/* ---------- QUIZ ---------- */
+.top{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:800;color:#fff;padding:0 4px 9px;text-shadow:0 1px 4px rgba(0,0,0,.25)}
+.track{height:5px;background:rgba(255,255,255,.3);border-radius:99px;overflow:hidden;margin-bottom:16px}
+.fill{height:100%;width:0;background:#fff;border-radius:99px;transition:width .3s ease}
+.pills{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.pill{font-size:11px;font-weight:700;padding:5px 11px;border-radius:999px;background:#f6f3ff;color:var(--acc);border:1px solid #ece6ff}
+.pill.t{background:#fff4fa;color:var(--acc2);border-color:#ffe3f1}
+.q{font-size:20px;font-weight:800;line-height:1.35;letter-spacing:-.3px;margin-bottom:17px}
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{
+  display:flex;align-items:center;gap:12px;width:100%;
+  background:#fff;border:2px solid var(--line);border-radius:15px;
+  padding:14px 14px;cursor:pointer;text-align:left;
+  font-size:15px;font-weight:600;color:var(--ink);line-height:1.35;
+  transition:border-color .12s ease,transform .12s ease
+}
+.opt:active{transform:scale(.99)}
+.opt .k{
+  flex:0 0 auto;width:26px;height:26px;border-radius:9px;background:#f3f0ff;color:var(--acc);
+  font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center
+}
+.opt .lbl{flex:1}
+.opt .mk{flex:0 0 auto;font-size:17px;opacity:0}
+.opt.good{border-color:var(--ok);background:var(--okbg)}
+.opt.good .mk{opacity:1}
+.opt.bad{border-color:var(--bad);background:var(--badbg)}
+.opt.bad .mk{opacity:1}
+.opt.dim{opacity:.4}
+.opt.sel{border-color:var(--acc);background:#faf8ff}
+.opt .num{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--acc2)}
+
+.fb{margin-top:15px;border-radius:15px;padding:14px 15px;font-size:13.5px;line-height:1.55;border:1px solid}
+.fb.ok{background:var(--okbg);border-color:#b9ecc9}
+.fb.no{background:var(--badbg);border-color:#f7c9c9}
+.fb b{display:block;margin-bottom:5px;font-size:14px}
+.fb.ok b{color:var(--ok)}
+.fb.no b{color:var(--bad)}
+.fb i{font-style:normal;color:var(--ink2)}
+.next{margin-top:14px}
+
+/* ---------- ENDE ---------- */
+.endico{font-size:58px;text-align:center}
+.endgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0 18px}
+.hint{text-align:center;font-size:12px;color:rgba(255,255,255,.75);margin-top:16px;line-height:1.6}
+.hint a{color:#fff;text-decoration:underline;cursor:pointer}
+@media(max-width:380px){.q{font-size:18px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ================= START ================= -->
+<section id="sStart" class="screen on">
+  <div class="card">
+    <div class="crest">&#9878;&#65039;</div>
+    <h1>Bastille-Quest</h1>
+    <div class="sub">Absolutismus &middot; Aufkl&auml;rung &middot; Franz&ouml;sische Revolution &middot; Wiener Klassik<br>Geschichte 8. Klasse &middot; 151 Aufgaben</div>
+    <div class="stats">
+      <div class="stat"><b id="xpOut">0</b><span>XP</span></div>
+      <div class="stat"><b id="dayOut">0</b><span>TAGE</span></div>
+      <div class="stat"><b id="modOut">0/7</b><span>MODULE</span></div>
+    </div>
+    <button class="btn" onclick="go('sMods')">&#128640; Los geht&#39;s</button>
+    <button class="btn ghost" onclick="resetAll()">Fortschritt zur&uuml;cksetzen</button>
+  </div>
+</section>
+
+<!-- ================= MODULE ================= -->
+<section id="sMods" class="screen">
+  <div class="card">
+    <h2>Module</h2>
+    <div class="sub">Was willst du &uuml;ben?</div>
+    <div class="mods" id="modList"></div>
+    <button class="btn" onclick="start('ALL')">&#127922; Alles gemischt</button>
+    <button class="btn ghost" onclick="go('sStart')">&larr; Zur&uuml;ck</button>
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="sQuiz" class="screen">
+  <div class="top"><span id="qPos">Frage 1 / 10</span><span id="qScore">&#9989; 0 richtig</span></div>
+  <div class="track"><div class="fill" id="qFill"></div></div>
+  <div class="card" id="qCard"></div>
+  <button class="btn ghost" style="color:rgba(255,255,255,.85)" onclick="quit()">&larr; Abbrechen</button>
+</section>
+
+<!-- ================= ENDE ================= -->
+<section id="sEnd" class="screen">
+  <div class="card">
+    <div class="endico" id="eIco">&#127942;</div>
+    <h2 id="eTitle">Geschafft!</h2>
+    <div class="sub" id="eSub"></div>
+    <div class="endgrid">
+      <div class="stat"><b id="eRight">0</b><span>RICHTIG</span></div>
+      <div class="stat"><b id="eQuote">0%</b><span>QUOTE</span></div>
+      <div class="stat"><b id="eXp">0</b><span>XP</span></div>
+    </div>
+    <button class="btn" onclick="again()">&#128260; Nochmal</button>
+    <button class="btn ghost" onclick="go('sMods')">Anderes Modul w&auml;hlen</button>
+  </div>
+</section>
+
+<div class="hint">Alle Module sind frei spielbar &ndash; keine Reihenfolge.</div>
+</div>
+
+<script>
+/* =========================================================
+   BASTILLE-QUEST
+   Quelle: Geschichte entdecken 3, Realschule Bayern (C.C.Buchner),
+   Kapitel 1 "Der Weg in die Moderne", S. 12-31
+   + Arbeitsblaetter Geschichte 8C und Mu 8.2 (Wiener Klassik)
+   ========================================================= */
+
+var MODS = [
+  {id:"abs",    ic:"👑", name:"Absolutismus & Ständegesellschaft", src:"Buch S. 12, 22"},
+  {id:"aufk",   ic:"💡", name:"Die Aufklärung",                    src:"Buch S. 14/15"},
+  {id:"gewalt", ic:"⚖️",  name:"Gewaltenteilung & Verfassung",          src:"Buch S. 16/17"},
+  {id:"rev1",   ic:"🔥", name:"Revolution 1789 – der Ausbruch",    src:"Buch S. 26-29"},
+  {id:"rev2",   ic:"⚔️",  name:"Radikalisierung & Großer Terror",  src:"Buch S. 30/31"},
+  {id:"klassik",ic:"🎼", name:"Wiener Klassik",                         src:"Musik Mu 8.2"},
+  {id:"mix",    ic:"🧠", name:"Anwenden & Vergleichen",                 src:"alle Themen"}
+];
+
+/* ---------------------------------------------------------
+   FRAGEN
+   t = Typ:  mc = Auswahl | tf = Wahr/Falsch | cl = Lückentext | or = Reihenfolge
+   c = Index der richtigen Antwort im Original-Array (wird gemischt)
+   --------------------------------------------------------- */
+var Q = [
+
+/* ======== MODUL 1: ABSOLUTISMUS & STAENDEGESELLSCHAFT ======== */
+{m:"abs",t:"mc",q:"Was bedeutet &bdquo;Absolutismus&ldquo;?",o:["Eine Regierungsform, in der ein einzelner Herrscher ohne Rücksicht auf Adel und Klerus allein regiert","Eine Regierungsform, in der das Volk den Herrscher wählt","Eine Herrschaft, die an eine Verfassung gebunden ist","Die gemeinsame Herrschaft mehrerer Adelsfamilien"],c:0,e:"Im Absolutismus vereint ein einzelner Herrscher alle Machtbefugnisse des Staates. Er allein kann Gesetze einführen oder abschaffen."},
+{m:"abs",t:"mc",q:"Aus welchen griechischen Wörtern setzt sich &bdquo;Monarchie&ldquo; zusammen?",o:["monos = einer und archein = herrschen","mono = Geld und arché = Besitz","monas = Staat und archon = Gesetz","monarchos = Adel und kratein = wählen"],c:0,e:"Monarchie heißt wörtlich &bdquo;Herrschaft eines Einzelnen&ldquo; – also die Herrschaft eines Königs oder Kaisers."},
+{m:"abs",t:"mc",q:"Womit begründeten die absolutistischen Könige ihre Macht?",o:["Mit dem Gottesgnadentum – ihre Herrschaft sei ihnen von Gott verliehen","Mit einer Volksabstimmung","Mit einem Vertrag mit dem Adel","Mit den Erfolgen ihrer Armee"],c:0,e:"Die Landesherren rechtfertigten ihre Alleinherrschaft damit, dass sie ihnen von Gott verliehen sei. Genau das kritisierten die Aufklärer."},
+{m:"abs",t:"tf",q:"Im Absolutismus galt nicht nur die Herrschaft des Königs, sondern auch die Ständegesellschaft als gottgewollt.",c:true,e:"Richtig. Dass Klerus und Adel Vorrechte hatten und das einfache Volk nicht mitbestimmte, galt als von Gott so gewollt."},
+{m:"abs",t:"mc",q:"Wie war die französische Ständegesellschaft aufgebaut?",o:["1. Stand Klerus, 2. Stand Adel, 3. Stand Bauern und Bürger","1. Stand Adel, 2. Stand Klerus, 3. Stand Soldaten","1. Stand König, 2. Stand Adel, 3. Stand Klerus","1. Stand Bürger, 2. Stand Bauern, 3. Stand Adel"],c:0,e:"Ganz oben stand der König, darunter die drei Stände: Klerus, Adel und als größte Gruppe Bauern und Bürger."},
+{m:"abs",t:"mc",q:"Wer gehörte zum Ersten Stand?",o:["Der Klerus, also die Geistlichen","Der Adel","Die Bauern","Die Stadtbürger"],c:0,e:"Klerus bedeutet: Angehörige der Kirche."},
+{m:"abs",t:"mc",q:"Wer trug in Frankreich fast die gesamte Steuerlast?",o:["Der Dritte Stand","Der Erste Stand","Der Zweite Stand","Der König"],c:0,e:"Der Dritte Stand – vor allem Stadtbürger und Bauern – zahlte fast alle Steuern, während die beiden oberen Stände nahezu steuerfrei waren."},
+{m:"abs",t:"mc",q:"Was versteht man unter &bdquo;Privilegien&ldquo;?",o:["Vorrechte bzw. Sonderrechte einzelner Gruppen","Steuern, die alle zahlen mussten","Gesetze gegen den Adel","Die Pflichten des Dritten Standes"],c:0,e:"Beispielsweise hatten nur die beiden ersten Stände das Jagd- und Fischereirecht."},
+{m:"abs",t:"mc",q:"Welches Vorrecht hatten nur der Erste und der Zweite Stand?",o:["Das Jagd- und Fischereirecht","Das Wahlrecht","Das Recht auf Schulbildung","Das Recht, Handel zu treiben"],c:0,e:"Jagd und Fischfang waren ein klassisches Privileg von Klerus und Adel."},
+{m:"abs",t:"tf",q:"Der Erste und der Zweite Stand besaßen zwar viele Vorrechte, aber nur wenig Grundbesitz.",c:false,e:"Falsch. Die beiden ersten Stände besaßen den weitaus größten Besitz im Land – und zahlten trotzdem kaum Steuern."},
+{m:"abs",t:"mc",q:"Welche Machtbefugnis hatte ein absolutistischer Herrscher NICHT?",o:["Er musste seine Gesetze von einem Parlament bestätigen lassen","Er war oberster Richter","Er hatte den Oberbefehl über das stehende Heer","Er entschied über die Einnahmen und Ausgaben des Staates"],c:0,e:"Genau darin liegt der Kern des Absolutismus: Gesetzgebung, Regierung und Rechtsprechung lagen in einer Hand, ohne Kontrolle durch ein Parlament."},
+{m:"abs",t:"mc",q:"Worauf hatte ein absolutistischer Herrscher ebenfalls Einfluss?",o:["Auf die Religion sowie auf die Ernennung von Ministern und Intendanten","Nur auf das Militär","Nur auf die Steuern","Auf gar nichts außerhalb seines Schlosses"],c:0,e:"Er ernannte seine Minister und Verwaltungsbeamten selbst und nahm auch Einfluss auf die Religion im Land."},
+{m:"abs",t:"mc",q:"Wer war seit 1774 König von Frankreich?",o:["Ludwig XVI.","Ludwig XIV.","Napoleon Bonaparte","Ludwig XV."],c:0,e:"Ludwig XVI. setzte die absolutistische Herrschaft und das luxuriöse Hofleben seiner Vorgänger fort."},
+{m:"abs",t:"mc",q:"Warum wuchs der Schuldenberg des französischen Staates?",o:["Wegen des luxuriösen Hoflebens und bereits geerbter Schulden","Weil der König alle Steuern abgeschafft hatte","Weil Frankreich keine Kolonien besaß","Weil der Adel zu hohe Steuern zahlte"],c:0,e:"Ludwig XVI. erbte bereits einen Schuldenberg und vergrößerte ihn durch das teure Hofleben weiter."},
+{m:"abs",t:"mc",q:"Was bedeutet &bdquo;Staatsbankrott&ldquo;?",o:["Der finanzielle Zusammenbruch eines Staates – die Regierung wird zahlungsunfähig","Die Absetzung des Königs","Die Auflösung des Parlaments","Die Einführung neuer Steuern"],c:0,e:"Genau diesen Zusammenbruch wollte Ludwig XVI. durch eine neue Steuerverteilung verhindern."},
+{m:"abs",t:"mc",q:"Was verschärfte 1788 und 1789 die Not der Bevölkerung?",o:["Missernten, Hungersnöte und stark steigende Nahrungsmittelpreise","Eine Seuche in Paris","Ein Krieg gegen England","Ein Erdbeben in Versailles"],c:0,e:"Immer weniger Menschen konnten sich das Nötigste leisten – und mussten trotzdem hohe Abgaben zahlen."},
+{m:"abs",t:"mc",q:"Wie wollte Ludwig XVI. den Staatsbankrott verhindern?",o:["Durch eine neue Steuerverteilung, die auch Adel und Klerus besteuert hätte","Durch den Verkauf von Versailles","Durch die Abschaffung der Stände","Durch noch höhere Steuern allein für die Bauern"],c:0,e:"Er wusste, dass eine weitere Erhöhung im Dritten Stand großen Unmut ausgelöst hätte – Adel und Klerus lehnten die Besteuerung jedoch ab."},
+{m:"abs",t:"mc",q:"Warum forderten Adel und Klerus eine Generalständeversammlung?",o:["Weil diese traditionell über Steuern entschied und sie die eigene Besteuerung verhindern wollten","Weil sie dem König Geld schenken wollten","Weil sie mehr Rechte für den Dritten Stand forderten","Weil der König sie dazu zwang"],c:0,e:"Die Generalständeversammlung bewilligte traditionellerweise die Steuern – dort hofften die beiden ersten Stände, die Neubesteuerung zu kippen."},
+{m:"abs",t:"mc",q:"Für wann rief Ludwig XVI. die Vertreter der drei Stände nach Versailles?",o:["Für den 5. Mai 1789","Für den 14. Juli 1789","Für den 17. Juni 1789","Für den 26. August 1789"],c:0,e:"Am 5. Mai 1789 versammelten sich die Generalstände in Versailles."},
+{m:"abs",t:"mc",q:"Wozu sammelten die Abgeordneten des Dritten Standes Beschwerdebriefe?",o:["Um dem König die Not und das Elend der Bevölkerung deutlich zu machen","Um den Adel vor Gericht zu bringen","Um den Papst um Hilfe zu bitten","Um Geld für den Staat zu sammeln"],c:0,e:"In ganz Frankreich schrieben Menschen Briefe, in denen sie bessere Lebensbedingungen forderten."},
+{m:"abs",t:"mc",q:"Was heizte die Stimmung in Frankreich zusätzlich an?",o:["Die Ereignisse in Nordamerika, wo ein demokratischer Staat mit garantierten Menschenrechten entstanden war","Ein Thronwechsel in England","Die Entdeckung Amerikas","Der Bau des Schlosses Versailles"],c:0,e:"Die Abgeordneten des Dritten Standes waren großenteils Anhänger der Aufklärung – das amerikanische Vorbild bestärkte sie."},
+{m:"abs",t:"mc",q:"Welchen Herrschertyp verkörperte Friedrich II. von Preußen?",o:["Den aufgeklärten Monarchen","Den absoluten Monarchen alten Stils","Den konstitutionellen Monarchen","Den gewählten Präsidenten"],c:0,e:"Friedrich der Große gilt als neuer Typ von Herrscher: Er behielt die volle Macht, fühlte sich aber den Ideen der Aufklärung verpflichtet."},
+{m:"abs",t:"mc",q:"In welchem Jahr bestieg Friedrich II. den preußischen Thron?",o:["1740","1789","1713","1756"],c:0,e:"Direkt nach seiner Thronbesteigung 1740 begann er den Krieg um Schlesien."},
+{m:"abs",t:"mc",q:"Welches Gebiet eroberte Friedrich II. nach seiner Thronbesteigung?",o:["Schlesien","Bayern","Böhmen","Das Elsass"],c:0,e:"Schlesien war eine reiche Provinz – die Eroberung machte Preußen zur Großmacht."},
+{m:"abs",t:"mc",q:"Wie beschrieb Friedrich II. seine eigene Rolle im Staat?",o:["Als ersten Diener seines Staates","Als Stellvertreter Gottes auf Erden","Als obersten Richter Europas","Als gewählten Vertreter des Volkes"],c:0,e:"Er hatte den Anspruch, sich um Land und Volk zu kümmern. In Mitschriften findet sich dafür auch die Formulierung &bdquo;erster Bürger seines Staates&ldquo;."},
+{m:"abs",t:"tf",q:"Ein aufgeklärter Monarch gab seine Macht an ein Parlament ab.",c:false,e:"Falsch. Er behielt die Macht vollständig – sah sich aber in der Pflicht, sie zum Wohl von Land und Volk einzusetzen."},
+
+/* ======== MODUL 2: DIE AUFKLAERUNG ======== */
+{m:"aufk",t:"mc",q:"Wer beschäftigte sich 1783 mit der Frage &bdquo;Was ist Aufklärung?&ldquo;",o:["Immanuel Kant","René Descartes","Jean-Jacques Rousseau","Isaac Newton"],c:0,e:"Kants Aufsatz ist die berühmteste Antwort auf diese Frage."},
+{m:"aufk",t:"cl",q:"Ergänze Kants Satz: &bdquo;Aufklärung ist der Ausgang des Menschen aus seiner selbst verschuldeten ___.&ldquo;",o:["Unmündigkeit","Armut","Unwissenheit","Abhängigkeit vom König"],c:0,e:"Unmündigkeit meint hier Abhängigkeit – und zwar eine selbst verschuldete."},
+{m:"aufk",t:"mc",q:"Was bedeutet &bdquo;Unmündigkeit&ldquo; bei Kant?",o:["Das Unvermögen, sich seines Verstandes ohne Leitung eines anderen zu bedienen","Dass man noch nicht volljährig ist","Dass man nicht lesen kann","Dass man kein Wahlrecht hat"],c:0,e:"Nicht fehlender Verstand ist das Problem, sondern fehlender Mut, ihn selbst zu gebrauchen."},
+{m:"aufk",t:"mc",q:"Wie lautet der Wahlspruch der Aufklärung?",o:["Sapere aude! Habe Mut, dich deines eigenen Verstandes zu bedienen!","Ich denke, also bin ich!","Freiheit, Gleichheit, Brüderlichkeit!","Der Staat bin ich!"],c:0,e:"Sapere aude ist lateinisch und heißt: Wage es, weise zu sein."},
+{m:"aufk",t:"mc",q:"Von wem stammt der Satz &bdquo;Ich denke, also bin ich&ldquo;?",o:["René Descartes","Immanuel Kant","John Locke","Isaac Newton"],c:0,e:"Descartes (1596–1650) meinte damit, dass die wesentliche Eigenschaft des Menschen darin besteht, logisch zu denken und seine Vernunft zu gebrauchen."},
+{m:"aufk",t:"mc",q:"In welchem Zeitraum liegt die Epoche der Aufklärung?",o:["17. und 18. Jahrhundert","15. und 16. Jahrhundert","18. und 19. Jahrhundert","13. und 14. Jahrhundert"],c:0,e:"In dieser Epoche der Wissenschafts- und Geistesgeschichte wurde das selbstständig-kritische Denken gefordert."},
+{m:"aufk",t:"mc",q:"Welches Symbol steht für die Aufklärung?",o:["Das Licht","Das Schwert","Die Krone","Der Anker"],c:0,e:"Das Licht steht für die &bdquo;Erleuchtung&ldquo; durch den Verstand – im Gegensatz zur &bdquo;Finsternis&ldquo; des Unwissens."},
+{m:"aufk",t:"mc",q:"Wie nannte man die Aufklärung in England?",o:["enlightenment","illumination","renaissance","revolution"],c:0,e:"Die neue Geisteshaltung entstand zunächst in England."},
+{m:"aufk",t:"mc",q:"Wie hieß die Aufklärung in Frankreich?",o:["siècle des lumières – Jahrhundert der Erleuchtung","âge de raison","grand siècle","temps nouveau"],c:0,e:"Aus dieser französischen Bezeichnung entwickelte sich unser Wort &bdquo;Aufklärung&ldquo;."},
+{m:"aufk",t:"mc",q:"Welche Figur zeigt das Bild &bdquo;Toleranz&ldquo; aus dem Jahr 1791?",o:["Minerva, die Göttin der Weisheit","Venus, die Göttin der Liebe","Diana, die Göttin der Jagd","Fortuna, die Göttin des Glücks"],c:0,e:"Das Licht, das sie umstrahlt, ist das Symbol der Aufklärung."},
+{m:"aufk",t:"mc",q:"Was entdeckte Isaac Newton?",o:["Das Gesetz der Schwerkraft und die Gesetze der klassischen Mechanik","Die Dampfmaschine","Den Blitzableiter","Das Mikroskop"],c:0,e:"Newton (1643–1727) ist ein Musterbeispiel für die neue naturwissenschaftliche Denkweise der Aufklärung."},
+{m:"aufk",t:"mc",q:"Wie gingen die Aufklärer in den Naturwissenschaften vor?",o:["Sie beobachteten die Natur genau, suchten nach Gesetzen und Formeln und überprüften alles in Experimenten","Sie verließen sich auf alte Schriften","Sie fragten die Kirche um Rat","Sie glaubten den Aussagen des Königs"],c:0,e:"Erst die Überprüfbarkeit machte aus einer Beobachtung eine wissenschaftliche Erkenntnis."},
+{m:"aufk",t:"mc",q:"Warum unterstützten die Aufklärer den Bau von Schulen und Universitäten?",o:["Weil exaktes und systematisches Denken eine gute Schulbildung voraussetzt","Weil der König es befahl","Weil sie Kirchen ersetzen wollten","Weil Schulen hohe Steuern einbrachten"],c:0,e:"Bildung war für die Aufklärer die Voraussetzung dafür, dass Menschen überhaupt selbstständig denken können."},
+{m:"aufk",t:"mc",q:"Wer veröffentlichte zwischen 1751 und 1772 die &bdquo;Encyclopédie&ldquo;?",o:["Denis Diderot und Jean Baptiste le Rond d&#39;Alembert","Kant und Descartes","Locke und Montesquieu","Rousseau und Voltaire"],c:0,e:"Die beiden Franzosen schufen das erste große Nachschlagewerk – daher das Wort Enzyklopädie."},
+{m:"aufk",t:"mc",q:"Was war das Ziel der ersten Enzyklopädie?",o:["Das gesamte Wissen ihrer Zeit zu sammeln","Die Kirche zu verbieten","Den König zu stürzen","Französisch als Weltsprache durchzusetzen"],c:0,e:"Bis heute nennt man Nachschlagewerke deshalb Enzyklopädien."},
+{m:"aufk",t:"mc",q:"Was ist heute ein digitaler Nachfolger der Enzyklopädie?",o:["Wikipedia","Instagram","YouTube","WhatsApp"],c:0,e:"Das Prinzip ist dasselbe: gesammeltes Wissen zum Nachschlagen – heute nicht mehr in Buchform, sondern im Internet."},
+{m:"aufk",t:"mc",q:"Wer erfand 1752 den Blitzableiter?",o:["Franklin","Watt","Huygens","Leibniz"],c:0,e:"Der Blitzableiter ist ein typisches Beispiel dafür, wie neue Naturgesetze praktisch genutzt wurden."},
+{m:"aufk",t:"mc",q:"Wer baute 1769 die Dampfmaschine?",o:["Watt","Newton","Fahrenheit","Montgolfier"],c:0,e:"Die Dampfmaschine wurde später zum Motor der Industrialisierung."},
+{m:"aufk",t:"mc",q:"Wem gelang 1783 der Heißluftballon?",o:["Den Gebrüdern Montgolfiere","Den Gebrüdern Wright","Leibniz","Huygens"],c:0,e:"Nach ihnen heißt der Heißluftballon bis heute auch Montgolfiere."},
+{m:"aufk",t:"mc",q:"Wer baute 1657 die Pendeluhr?",o:["Huygens","Newton","Janssen","Leibniz"],c:0,e:"Die Pendeluhr machte genaue Zeitmessung möglich – eine Voraussetzung für exakte Experimente."},
+{m:"aufk",t:"mc",q:"Wer entwickelte 1673 die Multipliziermaschine?",o:["Leibniz","Fahrenheit","Franklin","Descartes"],c:0,e:"Leibniz&#39; Rechenmaschine gilt als ein früher Vorläufer des Computers."},
+{m:"aufk",t:"mc",q:"Wer erfand 1718 das Quecksilberthermometer?",o:["Fahrenheit","Huygens","Watt","Franklin"],c:0,e:"Die Temperaturskala nach Fahrenheit ist bis heute nach ihm benannt."},
+{m:"aufk",t:"mc",q:"In welchem Jahr wurde laut Buch das Mikroskop erfunden?",o:["1590","1642","1669","1718"],c:0,e:"Das Mikroskop ist die älteste Erfindung in der Tabelle – es eröffnete eine völlig neue Welt für die Forschung."},
+{m:"aufk",t:"tf",q:"Die Aufklärer forderten, dass die Menschen ihren eigenen Verstand gebrauchen, statt blind Vorgaben und Meinungen anderer zu folgen.",c:true,e:"Richtig. Genau das war Kants zentrale Forderung."},
+{m:"aufk",t:"mc",q:"Welche Regierungsform kritisierten die Aufklärer besonders?",o:["Den Absolutismus","Die Republik","Die Demokratie","Die konstitutionelle Monarchie"],c:0,e:"Für die Aufklärer war es logisch und vernünftig, dass die Bürger selbst bestimmen, wer den Staat regiert."},
+
+/* ======== MODUL 3: GEWALTENTEILUNG & VERFASSUNG ======== */
+{m:"gewalt",t:"mc",q:"Was ist eine Verfassung?",o:["Ein Gesetzeswerk, in dem die politischen Rechte und Pflichten von Regierung und Staatsbürgern festgelegt sind","Eine Liste aller Steuern eines Landes","Ein Vertrag zwischen zwei Staaten","Die Hausordnung des Königs"],c:0,e:"Die Aufklärer nannten sie auch &bdquo;Gesellschaftsvertrag&ldquo;."},
+{m:"gewalt",t:"mc",q:"Was bedeutet Volkssouveränität?",o:["Die Macht bzw. Staatsgewalt geht vom Volke aus","Der König regiert allein","Die Kirche bestimmt die Gesetze","Der Adel wählt den König"],c:0,e:"Rousseau meinte, ein Fürst dürfe nur herrschen, wenn das Volk einverstanden ist."},
+{m:"gewalt",t:"mc",q:"Was versteht man unter Gewaltenteilung?",o:["Die Staatsgewalt liegt nicht bei einer Person, sondern wird auf verschiedene staatliche Einrichtungen verteilt","Der Staat teilt sein Gebiet unter Adligen auf","Das Militär übernimmt die Regierung","Die Macht wird zwischen König und Papst geteilt"],c:0,e:"Genau das ist der Gegenentwurf zum Absolutismus, in dem alle Gewalt in einer Hand lag."},
+{m:"gewalt",t:"mc",q:"Wozu dient die Gewaltenteilung?",o:["Sie soll Machtmissbrauch verhindern und den Staat verbessern","Sie soll Steuern erhöhen","Sie soll den König schützen","Sie soll Kriege ermöglichen"],c:0,e:"Wer alle Macht hat, kann sie auch missbrauchen – deshalb wird sie aufgeteilt."},
+{m:"gewalt",t:"mc",q:"Welche drei Gewalten gibt es?",o:["Legislative, Exekutive und Judikative","Monarchie, Republik und Diktatur","König, Adel und Klerus","Bundestag, Bundesrat und Bundespräsident"],c:0,e:"Montesquieu beschrieb 1748 genau diese drei Arten von Staatsgewalt."},
+{m:"gewalt",t:"mc",q:"Was ist die Legislative?",o:["Die gesetzgebende Gewalt","Die ausführende Gewalt","Die richterliche Gewalt","Die freie Presse"],c:0,e:"Sie schafft Gesetze, ändert sie oder schafft sie ab."},
+{m:"gewalt",t:"mc",q:"Was ist die Exekutive?",o:["Die ausführende bzw. vollziehende Gewalt","Die gesetzgebende Gewalt","Die rechtsprechende Gewalt","Die Opposition im Parlament"],c:0,e:"Sie regiert und setzt die Gesetze um."},
+{m:"gewalt",t:"mc",q:"Was ist die Judikative?",o:["Die rechtsprechende bzw. richterliche Gewalt","Die gesetzgebende Gewalt","Die ausführende Gewalt","Die Verwaltung der Steuern"],c:0,e:"Sie bestraft Verbrechen und entscheidet bei Streitfällen zwischen Einzelpersonen."},
+{m:"gewalt",t:"mc",q:"Welche Einrichtungen gehören in Deutschland zur Legislative?",o:["Bundestag, Bundesrat und die Parlamente der Länder","Bundeskanzler und Bundesregierung","Bundesverfassungsgericht und Gerichte der Länder","Polizei und Behörden"],c:0,e:"Alle drei beschließen Gesetze – auf Bundes- oder Landesebene."},
+{m:"gewalt",t:"mc",q:"Welche Einrichtungen gehören zur Exekutive?",o:["Bundeskanzler, Minister, Bundesregierung, Länderregierungen, Polizei und Behörden","Bundestag und Bundesrat","Das Bundesverfassungsgericht","Die Zeitungsredaktionen"],c:0,e:"Auch Polizei, Ämter und Behörden des Bundes und der Länder gehören dazu."},
+{m:"gewalt",t:"mc",q:"Welche Einrichtungen gehören zur Judikative?",o:["Bundesverfassungsgericht, oberste Gerichtshöfe und Gerichte der Länder","Bundestag und Landtage","Bundesregierung und Ministerien","Die Bundeswehr"],c:0,e:"Die Gerichte sind unabhängig – sie dürfen von der Regierung keine Anweisungen bekommen."},
+{m:"gewalt",t:"mc",q:"Wer schrieb 1748 das Werk &bdquo;Vom Geist der Gesetze&ldquo;?",o:["Charles de Montesquieu","John Locke","Jean-Jacques Rousseau","Immanuel Kant"],c:0,e:"Dort beschrieb er die drei Arten von Staatsgewalt."},
+{m:"gewalt",t:"mc",q:"Wer schlug die Gewaltenteilung zuerst vor, und wer entwickelte sie weiter?",o:["Locke schlug sie vor, Montesquieu entwickelte sie weiter","Montesquieu schlug sie vor, Rousseau entwickelte sie weiter","Kant schlug sie vor, Locke entwickelte sie weiter","Rousseau schlug sie vor, Descartes entwickelte sie weiter"],c:0,e:"Locke wollte die Macht des Landesherrn begrenzen, um Willkürherrschaft zu verhindern."},
+{m:"gewalt",t:"mc",q:"Was meinte Rousseau?",o:["Ein Fürst dürfe nur herrschen, wenn das Volk einverstanden ist","Der König stehe über dem Gesetz","Nur der Adel dürfe wählen","Ein Staat brauche keine Verfassung"],c:0,e:"Das ist der Kern der Volkssouveränität."},
+{m:"gewalt",t:"mc",q:"Welche Naturrechte besitzt nach Ansicht der Aufklärer jeder Mensch von Natur aus?",o:["Das Recht auf Freiheit und Eigentum","Das Recht auf Jagd und Fischfang","Das Recht auf einen Adelstitel","Das Recht auf Steuerfreiheit"],c:0,e:"Aus diesen Naturrechten leiteten sie ab, dass Bürger im Staat mitbestimmen dürfen."},
+{m:"gewalt",t:"mc",q:"Was war ein wichtiger Kritikpunkt der Aufklärer an den Landesherren?",o:["Das Gottesgnadentum, mit dem sie ihre Alleinherrschaft rechtfertigten","Dass sie zu wenig Krieg führten","Dass sie zu viele Schulen bauten","Dass sie das Parlament zu oft einberiefen"],c:0,e:"Die Aufklärer setzten dagegen die Naturrechte jedes einzelnen Menschen."},
+{m:"gewalt",t:"mc",q:"Wie nannten die Aufklärer den Vertrag, der die Rechte der Bürger garantieren sollte?",o:["Gesellschaftsvertrag","Friedensvertrag","Handelsvertrag","Lehnsvertrag"],c:0,e:"Der Gesellschaftsvertrag entspricht dem, was wir heute Verfassung nennen."},
+{m:"gewalt",t:"mc",q:"Welches zusätzliche Recht forderte John Locke?",o:["Das Recht, mit Gewalt gegen ungerechte Herrscher vorzugehen","Das Recht auf freie Religionswahl für den Adel","Das Recht des Königs auf Steuererhöhungen","Das Recht der Kirche auf eigene Gerichte"],c:0,e:"Locke war der Ansicht, der Einzelne dürfe sich gegen Willkürherrschaft auch mit Gewalt wehren."},
+{m:"gewalt",t:"mc",q:"Welche Einrichtung wird oft als &bdquo;vierte Gewalt&ldquo; bezeichnet?",o:["Die unabhängige Presse","Die Polizei","Die Armee","Die Kirche"],c:0,e:"Sie ist keine Staatsgewalt im eigentlichen Sinn, übt aber eine Kontrollfunktion aus."},
+{m:"gewalt",t:"mc",q:"Welche Aufgabe hat die &bdquo;vierte Gewalt&ldquo;?",o:["Sie kontrolliert die Staatsgewalt und macht Machtmissbrauch öffentlich","Sie beschließt Gesetze","Sie verurteilt Straftäter","Sie ernennt die Minister"],c:0,e:"Deshalb ist Pressefreiheit für eine Demokratie so wichtig."},
+{m:"gewalt",t:"mc",q:"Wie nennt man die gegenseitige Kontrolle der Gewalten nach amerikanischem Vorbild?",o:["checks and balances","trial and error","law and order","rights and duties"],c:0,e:"Die Gewalten kontrollieren sich gegenseitig und halten sich so im Gleichgewicht."},
+{m:"gewalt",t:"tf",q:"Nach Montesquieu gibt es keine Freiheit, wenn die gesetzgebende und die ausführende Gewalt in einer Person vereint sind.",c:true,e:"Richtig. Er befürchtete, dass derselbe Monarch dann tyrannische Gesetze erließe und sie auch tyrannisch durchführte."},
+{m:"gewalt",t:"mc",q:"Warum hatten die aufgeklärten Bürger so großes Interesse an politischen Rechten?",o:["Sie waren wirtschaftlich aufgestiegen und gebildet, hatten aber kaum politischen Einfluss","Sie wollten selbst Adlige werden","Sie wollten gar keine Steuern mehr zahlen","Sie wollten die Kirche abschaffen"],c:0,e:"Deshalb verbreiteten sich die Ideen der Aufklärer vor allem in dieser Schicht sehr schnell."},
+
+/* ======== MODUL 4: REVOLUTION 1789 - DER AUSBRUCH ======== */
+{m:"rev1",t:"mc",q:"Wo und wann traten die Generalstände zusammen?",o:["Am 5. Mai 1789 in Versailles","Am 14. Juli 1789 in Paris","Am 17. Juni 1789 in Versailles","Am 26. August 1789 in Paris"],c:0,e:"Ludwig XVI. hatte die Vertreter der drei Stände zu sich nach Versailles gerufen."},
+{m:"rev1",t:"mc",q:"Warum forderte der Dritte Stand eine Abstimmung &bdquo;nach Köpfen&ldquo;?",o:["Weil er ca. 600 Vertreter hatte und bei einer Stimme pro Stand immer überstimmt worden wäre","Weil es schneller ging","Weil der König es verlangte","Weil die anderen Stände es vorschlugen"],c:0,e:"Bei der üblichen Abstimmung hatte jeder Stand nur eine Stimme – zwei gegen einen."},
+{m:"rev1",t:"mc",q:"Wie viele Vertreter hatten der Erste und der Zweite Stand jeweils?",o:["Jeweils ca. 300","Jeweils ca. 600","Jeweils ca. 100","Jeweils ca. 950"],c:0,e:"Der Dritte Stand war mit ca. 600 Vertretern doppelt so stark – aber nur bei Abstimmung nach Köpfen."},
+{m:"rev1",t:"mc",q:"Wie reagierte Ludwig XVI. auf den Streit um das Abstimmungsverfahren?",o:["Er ließ verärgert den Tagungsraum des Dritten Standes schließen","Er trat zurück","Er stimmte sofort zu","Er floh ins Ausland"],c:0,e:"Daraufhin wichen die Abgeordneten in das nahegelegene Ballhaus aus."},
+{m:"rev1",t:"mc",q:"Wohin wichen die Abgeordneten des Dritten Standes aus?",o:["In das Ballhaus, eine nahegelegene Sporthalle","In die Kathedrale von Versailles","In die Bastille","In das Rathaus von Paris"],c:0,e:"Daher der Name &bdquo;Ballhaus-Schwur&ldquo;."},
+{m:"rev1",t:"mc",q:"Wann erklärten sich die Abgeordneten zur &bdquo;Nationalversammlung&ldquo;?",o:["Am 17. Juni 1789","Am 5. Mai 1789","Am 14. Juli 1789","Am 4. August 1789"],c:0,e:"Ab diesem Tag verstanden sie sich als Vertreter des ganzen Volkes."},
+{m:"rev1",t:"mc",q:"Was schworen die Abgeordneten im Ballhaus-Schwur?",o:["Eine Verfassung zu erarbeiten","Den König zu stürzen","Die Bastille zu erstürmen","Keine Steuern mehr zu zahlen"],c:0,e:"In dieser Verfassung sollten die Rechte und Pflichten aller Bürger – und auch des Königs – festgelegt werden."},
+{m:"rev1",t:"mc",q:"Als wen verstanden sich die Abgeordneten der Nationalversammlung?",o:["Als Vertreter des ganzen französischen Volkes","Als Vertreter nur des Dritten Standes","Als Vertreter des Königs","Als Vertreter der Kirche"],c:0,e:"Damit war die alte Ständeordnung im Grunde aufgekündigt."},
+{m:"rev1",t:"mc",q:"Was schrieb Emmanuel Joseph Sieyès 1788 über den Dritten Stand?",o:["Er sei alles, in der politischen Ordnung bisher aber nichts gewesen – und wolle etwas sein","Er sei zu klein, um etwas zu bewirken","Er solle dem Adel folgen","Er solle auswandern"],c:0,e:"Diese Flugschrift verbreitete sich innerhalb kürzester Zeit in ganz Frankreich."},
+{m:"rev1",t:"mc",q:"Was geschah am 14. Juli 1789?",o:["Der Sturm auf die Bastille","Die Hinrichtung des Königs","Die Erklärung der Menschenrechte","Die Flucht des Königs"],c:0,e:"Ca. 950 Menschen eroberten das verhasste Gefängnis."},
+{m:"rev1",t:"mc",q:"Was war die Bastille?",o:["Ein Gefängnis für politische Gefangene und Symbol der willkürlichen absolutistischen Herrschaft","Das Schloss des Königs","Der Sitz der Nationalversammlung","Eine Kirche in Paris"],c:0,e:"Gerade als Symbol war ihre Erstürmung so wirkungsvoll."},
+{m:"rev1",t:"mc",q:"Wie viele Gefangene wurden bei der Erstürmung der Bastille befreit?",o:["Sieben","Siebzig","Hundert","Keiner"],c:0,e:"Der symbolische Wert war also weit größer als der praktische."},
+{m:"rev1",t:"mc",q:"Als was gilt der Sturm auf die Bastille?",o:["Als Beginn der Französischen Revolution","Als Ende der Revolution","Als Beginn des Großen Terrors","Als Sieg des Königs"],c:0,e:"Der 14. Juli ist bis heute französischer Nationalfeiertag."},
+{m:"rev1",t:"mc",q:"Wie hieß die Bürgerwehr, die die Pariser zu ihrem Schutz gründeten?",o:["Nationalgarde","Nationalkonvent","Wohlfahrtsausschuss","Direktorium"],c:0,e:"Die Bürger übernahmen danach selbst die Stadtverwaltung."},
+{m:"rev1",t:"mc",q:"Was ist eine Revolution?",o:["Eine gewaltsame und grundlegende Veränderung der bestehenden politischen und gesellschaftlichen Verhältnisse","Eine friedliche Wahl","Ein Krieg zwischen zwei Staaten","Eine Steuerreform"],c:0,e:"Entscheidend sind beide Merkmale: gewaltsam und grundlegend."},
+{m:"rev1",t:"mc",q:"Was beschloss die Nationalversammlung in der Nacht vom 4. auf den 5. August 1789?",o:["Gleiche Steuern für alle Franzosen und die Aufhebung der Leibeigenschaft","Die Hinrichtung des Königs","Den Krieg gegen Österreich","Die Einführung der Guillotine"],c:0,e:"Damit fielen zentrale Vorrechte des Ersten und Zweiten Standes."},
+{m:"rev1",t:"mc",q:"Welcher Beschluss gehörte NICHT zur Nacht vom 4./5. August 1789?",o:["Die Abschaffung der Monarchie","Die Aufhebung der Leibeigenschaft","Das Jagdrecht für Bauern auf eigenem Grund und Boden","Der Kirchenzehnt wird als Geldsteuer bezahlt"],c:0,e:"Die Monarchie blieb zunächst bestehen – abgeschafft wurde sie erst 1792."},
+{m:"rev1",t:"mc",q:"Was verkündete die Nationalversammlung im August 1789?",o:["Die Erklärung der Menschen- und Bürgerrechte","Die Verfassung von 1791","Die Republik","Den Revolutionskalender"],c:0,e:"Sie war von den Vereinigten Staaten beeinflusst und wurde später in die Verfassung aufgenommen."},
+{m:"rev1",t:"mc",q:"Wie viele Artikel umfasst die Erklärung der Menschen- und Bürgerrechte?",o:["17","7","83","27"],c:0,e:"Artikel 1 beginnt mit dem Satz, dass die Menschen frei und gleich an Rechten geboren sind und bleiben."},
+{m:"rev1",t:"mc",q:"Wann wurden &bdquo;Freiheit, Gleichheit, Brüderlichkeit&ldquo; zum ersten Mal formuliert?",o:["Beim Fest am 14. Juli 1790, dem Jahrestag der Erstürmung der Bastille","Beim Ballhaus-Schwur 1789","Bei der Hinrichtung des Königs 1793","Beim Direktorium 1795"],c:0,e:"Bei diesem Fest musste der König auch einen Eid auf die Nation leisten."},
+{m:"rev1",t:"mc",q:"In wie viele Départements wurde Frankreich eingeteilt?",o:["83","17","3","50"],c:0,e:"In allen galten einheitliche Maße und Gewichte – der Staat bestand nicht mehr aus Herrschaftsgebieten einzelner Adliger."},
+{m:"rev1",t:"mc",q:"Welche Sprache wurde zur einzigen Nationalsprache erklärt?",o:["Französisch","Latein","Okzitanisch","Deutsch"],c:0,e:"Das sollte das Zusammengehörigkeitsgefühl der Franzosen als Nation stärken."},
+{m:"rev1",t:"mc",q:"Was geschah im Juni 1791?",o:["Ludwig XVI. unternahm einen Fluchtversuch und wurde an der Grenze erkannt","Der König wurde hingerichtet","Die Republik wurde ausgerufen","Robespierre übernahm die Macht"],c:0,e:"Er wollte zu verbündeten Herrschern ins Ausland – und wurde nach Paris zurückgebracht."},
+{m:"rev1",t:"mc",q:"Was musste Ludwig XVI. am 13. September 1791 tun?",o:["Auf die neue Verfassung schwören","Abdanken","Das Land verlassen","Die Bastille wieder aufbauen"],c:0,e:"Damit war die absolute Monarchie endgültig abgeschafft."},
+{m:"rev1",t:"mc",q:"Was ist eine konstitutionelle Monarchie?",o:["Eine Monarchie, in der der Herrscher an eine Verfassung gebunden und seine Macht gesetzlich begrenzt ist","Eine Monarchie ohne König","Eine Monarchie, in der der König alle Macht hat","Eine Republik mit einem Präsidenten"],c:0,e:"Konstitution ist ein anderes Wort für Verfassung."},
+{m:"rev1",t:"mc",q:"Welche Farben zeigt die Kokarde, und wofür stehen sie?",o:["Blau und Rot für die Stadt Paris, Weiß für das Königshaus","Blau für den Adel, Weiß für die Kirche, Rot für die Bauern","Blau für Freiheit, Weiß für Gleichheit, Rot für Brüderlichkeit","Alle drei Farben stehen für die drei Stände"],c:0,e:"Aus dieser Kombination wurde später die französische Trikolore."},
+{m:"rev1",t:"mc",q:"Welche Schlagworte stehen auf der französischen 1-Euro-Münze?",o:["LIBERTÉ, ÉGALITÉ, FRATERNITÉ","VIVE LA FRANCE","RÉPUBLIQUE ET ROI","PAIX ET TRAVAIL"],c:0,e:"Die Buchstaben RF auf der Münze stehen für République Française."},
+{m:"rev1",t:"tf",q:"Mit dem Eid auf die Verfassung 1791 war die absolute Monarchie in Frankreich endgültig abgeschafft.",c:true,e:"Richtig. Der König regierte nun an der Spitze einer konstitutionellen Monarchie."},
+{m:"rev1",t:"or",q:"Bringe die Ereignisse in die richtige Reihenfolge – tippe sie der Reihe nach an.",items:["5. Mai 1789: Generalstände in Versailles","17. Juni 1789: Ausrufung der Nationalversammlung","14. Juli 1789: Sturm auf die Bastille","4./5. August 1789: Aufhebung der Vorrechte","August 1789: Erklärung der Menschen- und Bürgerrechte","13. September 1791: Eid auf die Verfassung"],e:"Innerhalb von gut zwei Jahren wurde aus der Ständegesellschaft eine konstitutionelle Monarchie."},
+
+/* ======== MODUL 5: RADIKALISIERUNG & GROSSER TERROR ======== */
+{m:"rev2",t:"mc",q:"Warum kippte nach den ersten Erfolgen die Stimmung im Land?",o:["Es gab erneut Missernten und das Leben der einfachen Bevölkerung verbesserte sich kaum","Der König war sehr beliebt geworden","Die Steuern wurden abgeschafft","Frankreich gewann alle Kriege"],c:0,e:"Dazu kam der Krieg absolutistischer Herrscher gegen Frankreich, die Ludwig XVI. helfen wollten."},
+{m:"rev2",t:"mc",q:"Warum führten andere absolutistische Herrscher Krieg gegen Frankreich?",o:["Um König Ludwig XVI. zu helfen","Um Kolonien zu erobern","Um die Republik einzuführen","Um Napoleon zu unterstützen"],c:0,e:"Das schürte den Hass vieler Franzosen auf ihren eigenen König."},
+{m:"rev2",t:"mc",q:"Wann wurde Ludwig XVI. mit seiner Familie verhaftet?",o:["Am 10. August 1792","Am 14. Juli 1789","Am 21. Januar 1793","Am 22. September 1792"],c:0,e:"Kurz darauf wurde er abgesetzt."},
+{m:"rev2",t:"mc",q:"Was geschah am 22. September 1792?",o:["Der König wurde abgesetzt und die Republik ausgerufen","Die Bastille wurde gestürmt","Robespierre wurde hingerichtet","Das Direktorium übernahm die Macht"],c:0,e:"Damit endete die Monarchie in Frankreich."},
+{m:"rev2",t:"mc",q:"Wie hieß das Parlament, das den Prozess gegen Ludwig XVI. führte?",o:["Nationalkonvent","Nationalversammlung","Generalstände","Direktorium"],c:0,e:"Konvent bedeutet &bdquo;Versammlung&ldquo;."},
+{m:"rev2",t:"mc",q:"Wann wurde Ludwig XVI. hingerichtet?",o:["Am 21. Januar 1793","Am 10. August 1792","Am 14. Juli 1790","Im Oktober 1795"],c:0,e:"Neun Monate später starb auch seine Frau Marie Antoinette durch die Guillotine."},
+{m:"rev2",t:"mc",q:"Welche radikale Gruppe übernahm danach die Macht?",o:["Der Klub der Jakobiner unter Robespierre","Die Nationalgarde","Die Generalstände","Das Direktorium"],c:0,e:"Die Jakobiner waren eine radikale Gruppe innerhalb des Nationalkonvents."},
+{m:"rev2",t:"mc",q:"Was führte Robespierre 1793 ein, um die ausländischen Truppen zu bekämpfen?",o:["Die allgemeine Wehrpflicht","Die Guillotine","Den Revolutionskalender","Das Direktorium"],c:0,e:"So konnte Frankreich sehr große Armeen aufstellen."},
+{m:"rev2",t:"mc",q:"Welches Gremium sollte die Revolution radikal vorantreiben?",o:["Der Wohlfahrtsausschuss","Die Nationalgarde","Der Ballhaus-Klub","Die Generalständeversammlung"],c:0,e:"Unter ihm verwandelte sich die Republik in eine Diktatur der Jakobiner."},
+{m:"rev2",t:"mc",q:"Wie liefen die Verfahren der Revolutionsgerichte ab?",o:["In Schnellverfahren wurden wahllos Menschen verurteilt und hingerichtet","Jeder Angeklagte hatte einen Verteidiger","Es gab mehrere Berufungsinstanzen","Alle Urteile mussten vom König bestätigt werden"],c:0,e:"Von rechtsstaatlichen Verfahren konnte keine Rede mehr sein."},
+{m:"rev2",t:"mc",q:"Wie viele Menschen starben in Paris während des Großen Terrors innerhalb eines Jahres?",o:["Etwa 40.000","Etwa 4.000","Etwa 950","Etwa 400.000"],c:0,e:"Ein Großteil davon waren Menschen des Dritten Standes – also genau jene, für die die Revolution angetreten war."},
+{m:"rev2",t:"mc",q:"Aus welchem Stand stammte ein Großteil der Hingerichteten?",o:["Aus dem Dritten Stand","Aus dem Ersten Stand","Aus dem Zweiten Stand","Aus dem Ausland"],c:0,e:"Daher der Satz: Die Revolution frisst ihre eigenen Kinder."},
+{m:"rev2",t:"mc",q:"Wodurch endete der Große Terror?",o:["Robespierre wurde selbst verhaftet und 1794 hingerichtet","Der König kehrte zurück","Die Jakobiner gewannen den Krieg","Napoleon übernahm die Macht"],c:0,e:"Erst mit seinem Tod kam der Terror zum Ende."},
+{m:"rev2",t:"mc",q:"Wer leitete ab Oktober 1795 den Staat?",o:["Ein Direktorium aus fünf Personen","Der Nationalkonvent","Robespierre","Ludwig XVII."],c:0,e:"Eine neue Verfassung führte wieder ordentliche Gerichte ein."},
+{m:"rev2",t:"mc",q:"Was änderte die neue Verfassung von 1795 am Wahlrecht?",o:["Das Wahlrecht wurde vom Einkommen abhängig gemacht","Alle Franzosen durften wählen","Nur Adlige durften wählen","Das Wahlrecht wurde ganz abgeschafft"],c:0,e:"Damit waren die radikalen Massen entmachtet."},
+{m:"rev2",t:"mc",q:"Wonach ist die Guillotine benannt?",o:["Nach dem Arzt Joseph Ignace Guillotin","Nach dem Erfinder der Dampfmaschine","Nach einem Pariser Stadtteil","Nach einem Jakobiner-Anführer"],c:0,e:"Sie sollte eine &bdquo;menschenwürdigere&ldquo; Hinrichtungsart sein als das bisherige Verfahren."},
+{m:"rev2",t:"mc",q:"Warum galt die Guillotine als &bdquo;menschenwürdiger&ldquo;?",o:["Weil der Tod sicher und sofort eintrat, während der Henker mit dem Beil oft mehrmals zuschlagen musste","Weil sie geräuschlos arbeitete","Weil sie nur für Adlige verwendet wurde","Weil sie ohne Zuschauer auskam"],c:0,e:"Sie wurde trotzdem zum Symbol des Großen Terrors."},
+{m:"rev2",t:"mc",q:"Welcher Tag wurde im Revolutionskalender zum &bdquo;Tag 1 des Jahres 1&ldquo;?",o:["Der 22. September 1793","Der 14. Juli 1789","Der 21. Januar 1793","Der 5. Mai 1789"],c:0,e:"Mit dem neuen Kalender sollte die bisherige Königsherrschaft ein für alle Mal abgeschafft werden."},
+{m:"rev2",t:"mc",q:"Was bedeutet der Satz &bdquo;Die Revolution frisst ihre eigenen Kinder&ldquo;?",o:["Radikale Revolutionäre ließen auch jene hinrichten, die sich zuvor für die Revolution eingesetzt hatten","Kinder nahmen an der Revolution teil","Der König verlor seine Familie","Es herrschte eine Hungersnot"],c:0,e:"Der Ausspruch stammt von einem gemäßigten Revolutionär."},
+{m:"rev2",t:"tf",q:"Während der Jakobinerherrschaft blieb Frankreich eine funktionierende Republik mit Gewaltenteilung.",c:false,e:"Falsch. Die Republik verwandelte sich in eine Diktatur der Jakobiner."},
+{m:"rev2",t:"mc",q:"Was bedeutet das Wort &bdquo;Konvent&ldquo;?",o:["Versammlung","Gericht","Gefängnis","Verfassung"],c:0,e:"Daher der Name Nationalkonvent für das Parlament ab 1792."},
+{m:"rev2",t:"or",q:"Bringe die Ereignisse der Radikalisierung in die richtige Reihenfolge.",items:["10. August 1792: Verhaftung des Königs","22. September 1792: Ausrufung der Republik","21. Januar 1793: Hinrichtung Ludwigs XVI.","1793/94: Großer Terror unter Robespierre","1794: Hinrichtung Robespierres","Oktober 1795: Das Direktorium übernimmt"],e:"In nur drei Jahren wurde aus der konstitutionellen Monarchie erst eine Republik, dann eine Diktatur – und schließlich wieder eine gemäßigte Regierung."},
+
+/* ======== MODUL 6: WIENER KLASSIK ======== */
+{m:"klassik",t:"mc",q:"Welchen Zeitraum umfasst die Wiener Klassik?",o:["1732 bis 1827","1600 bis 1750","1789 bis 1815","1800 bis 1900"],c:0,e:"Die Jahreszahlen orientieren sich an den Lebensdaten der wichtigsten Komponisten."},
+{m:"klassik",t:"mc",q:"Als Zeitalter wovon gilt das 18. Jahrhundert?",o:["Als Zeitalter der Aufklärung","Als Zeitalter des Barock","Als Zeitalter der Romantik","Als Zeitalter der Reformation"],c:0,e:"Die gleiche Geisteshaltung prägt Politik, Wissenschaft und Musik."},
+{m:"klassik",t:"mc",q:"Wozu wollte Kant die Menschen erziehen?",o:["Zu Eigenständigkeit und Mündigkeit mithilfe von Verstand und kritischem Urteilsvermögen","Zu Gehorsam gegenüber dem König","Zu religiöser Strenge","Zu militärischer Disziplin"],c:0,e:"Das ist dieselbe Grundidee wie in seinem Aufsatz &bdquo;Was ist Aufklärung?&ldquo;."},
+{m:"klassik",t:"mc",q:"Wie war die gesellschaftliche Lage im 18. Jahrhundert?",o:["Bürger, Handwerker und Bauern standen Adel und Klerus fast rechtlos gegenüber","Alle Stände waren gleichberechtigt","Die Bauern hatten die meisten Rechte","Der Klerus war völlig machtlos"],c:0,e:"Man glaubte, durch Anwendung der Vernunft eine gerechtere Gesellschaftsordnung erreichen zu können."},
+{m:"klassik",t:"mc",q:"Wozu führten Verbitterung und Unzufriedenheit 1789?",o:["Zum Ausbruch der Französischen Revolution","Zur Krönung Napoleons","Zum Wiener Kongress","Zur Gründung der USA"],c:0,e:"Die Unzufriedenheit hatte sich immer weiter verstärkt, bis es 1789 zum Ausbruch kam."},
+{m:"klassik",t:"mc",q:"Welche Kultur löste die höfische Kultur ab?",o:["Die bürgerliche Kultur","Die kirchliche Kultur","Die bäuerliche Kultur","Die militärische Kultur"],c:0,e:"Das Bürgertum wurde zur neuen tragenden Schicht des Kulturlebens."},
+{m:"klassik",t:"mc",q:"Welche Zentren hatte die höfische Kultur?",o:["Kirche und Schloss","Haus und Salon","Kaffeehaus und Theater","Universität und Schule"],c:0,e:"Dort fand Musik vorher fast ausschließlich statt."},
+{m:"klassik",t:"mc",q:"An welchen Orten fand die neue bürgerliche Kultur statt?",o:["Im privaten Haus, im Salon und im Kaffeehaus","In Kirche und Schloss","In Kasernen","Auf Märkten"],c:0,e:"Musik wurde dadurch viel stärker Teil des Alltags."},
+{m:"klassik",t:"mc",q:"Wie wurde die barocke Lebensart des Adels beurteilt?",o:["Als schwülstig und dekadent","Als vorbildlich und schlicht","Als modern und vernünftig","Als arm und bescheiden"],c:0,e:"Gegen diese Lebensart erhob sich der Wunsch nach Einfachheit und Natürlichkeit."},
+{m:"klassik",t:"mc",q:"Wonach verlangte das Bürgertum stattdessen?",o:["Nach Einfachheit und Natürlichkeit","Nach noch mehr Prunk","Nach strenger Kirchenmusik","Nach militärischer Ordnung"],c:0,e:"Dieses Ideal prägt auch die Musik der Wiener Klassik: klare, eingängige Melodien statt Überladung."},
+{m:"klassik",t:"mc",q:"Von wem stammt das Klarinettenkonzert in A-Dur?",o:["Wolfgang Amadeus Mozart","Ludwig van Beethoven","Joseph Haydn","Johann Sebastian Bach"],c:0,e:"Es ist eines der bekanntesten Hörbeispiele der Wiener Klassik."},
+{m:"klassik",t:"mc",q:"Wer komponierte &bdquo;Für Elise&ldquo;?",o:["Ludwig van Beethoven","Wolfgang Amadeus Mozart","Franz Schubert","Joseph Haydn"],c:0,e:"Beethoven steht am Übergang von der Klassik zur Romantik."},
+{m:"klassik",t:"tf",q:"Die Ideen der Aufklärung beeinflussten auch die Musik und Baukunst des 18. Jahrhunderts.",c:true,e:"Richtig. Klarheit, Ebenmaß und Natürlichkeit finden sich in Musik und Architektur der Klassik gleichermaßen."},
+
+/* ======== MODUL 7: ANWENDEN & VERGLEICHEN ======== */
+{m:"mix",t:"mc",q:"Was ist der entscheidende Unterschied zwischen Absolutismus und demokratischer Republik?",o:["Im Absolutismus hat eine Person alle Macht, in der Republik ist die Macht auf Parlament, Regierung und Gerichte verteilt","Im Absolutismus gibt es überhaupt keine Gesetze","In der Republik gibt es keine Minister","Im Absolutismus wählt das Volk den König"],c:0,e:"Genau diesen Vergleich zeigen die beiden Schaubilder M1 und M2 auf S. 12 des Buches."},
+{m:"mix",t:"mc",q:"Welche Idee der Aufklärung steckt im Satz &bdquo;Die Staatsgewalt geht vom Volke aus&ldquo;?",o:["Die Volkssouveränität","Das Gottesgnadentum","Der Absolutismus","Die Ständeordnung"],c:0,e:"Rousseau und Locke sind die wichtigsten Denker dahinter."},
+{m:"mix",t:"mc",q:"Ein Minister erlässt eine Anordnung, ein Gericht erklärt sie für rechtswidrig. Welches Prinzip wirkt hier?",o:["Die Gewaltenteilung","Das Gottesgnadentum","Die Ständeordnung","Die Volkssouveränität"],c:0,e:"Die Judikative kontrolliert die Exekutive – ein klassischer Fall von checks and balances."},
+{m:"mix",t:"mc",q:"Warum war der Ballhaus-Schwur so wichtig?",o:["Weil die Abgeordneten zum ersten Mal beanspruchten, das ganze Volk zu vertreten und eine Verfassung zu schaffen","Weil dabei die Bastille gestürmt wurde","Weil dabei der König abgesetzt wurde","Weil dabei alle Steuern abgeschafft wurden"],c:0,e:"Damit war die Ständeordnung als Grundlage der Politik aufgekündigt."},
+{m:"mix",t:"mc",q:"Welche Forderung der Aufklärung erfüllte die Erklärung der Menschen- und Bürgerrechte?",o:["Dass jeder Mensch von Natur aus Rechte wie Freiheit und Eigentum besitzt","Dass der König über dem Gesetz steht","Dass nur Adlige wählen dürfen","Dass die Kirche den Staat leitet"],c:0,e:"Die Naturrechte der Aufklärer wurden damit in geltendes Recht übersetzt."},
+{m:"mix",t:"mc",q:"Welchen Einfluss hatten die Ereignisse in Nordamerika auf Frankreich?",o:["Sie zeigten, dass ein demokratischer Staat mit garantierten Menschenrechten möglich ist","Sie führten zu höheren Steuern in Frankreich","Sie brachten den König an die Macht","Sie hatten gar keinen Einfluss"],c:0,e:"Die englischen Kolonien in Nordamerika sahen nicht mehr ein, warum sie kein Mitspracherecht hatten – das wirkte als Vorbild."},
+{m:"mix",t:"mc",q:"Welche Gewalten vereinte ein absolutistischer Herrscher in seiner Person?",o:["Alle drei: Gesetzgebung, Regierung und Rechtsprechung","Nur die Legislative","Nur die Judikative","Keine, er regierte ohne Gesetze"],c:0,e:"Genau das ist der Gegensatz zur Gewaltenteilung."},
+{m:"mix",t:"mc",q:"Welcher Stand profitierte zunächst am meisten von der Revolution?",o:["Das Bürgertum des Dritten Standes","Der Adel","Der Klerus","Das Königshaus"],c:0,e:"Die gebildeten, wirtschaftlich aufgestiegenen Bürger setzten ihre politischen Forderungen durch."},
+{m:"mix",t:"mc",q:"Wie veränderte die Revolution den Begriff &bdquo;Bürger&ldquo;?",o:["Er umfasste nun alle Mitglieder der Nation, nicht mehr nur die freien Stadtbewohner","Er galt nur noch für Adlige","Er verschwand ganz","Er bezeichnete nur noch Bauern"],c:0,e:"Seit dem Mittelalter waren Bürger die freien Einwohner einer Stadt mit Bürgerrecht – das änderte sich grundlegend."},
+{m:"mix",t:"mc",q:"Welche Aussage passt zum aufgeklärten Absolutismus?",o:["Der Herrscher behält alle Macht, sieht sich aber als Diener des Staates","Der Herrscher teilt seine Macht mit einem Parlament","Das Volk wählt den Herrscher","Der Herrscher schafft die Stände ab"],c:0,e:"Friedrich II. von Preußen ist dafür das Standardbeispiel."},
+{m:"mix",t:"mc",q:"Warum ist eine unabhängige Presse für eine Demokratie wichtig?",o:["Weil sie die Staatsgewalt kontrolliert und Machtmissbrauch öffentlich macht","Weil sie Gesetze beschließt","Weil sie Richter ernennt","Weil sie Steuern eintreibt"],c:0,e:"Deshalb spricht man von ihr als &bdquo;vierter Gewalt&ldquo;."},
+{m:"mix",t:"tf",q:"In einer Demokratie darf dieselbe Person gleichzeitig Gesetze beschließen und als Richterin urteilen.",c:false,e:"Falsch. Genau das soll die Gewaltenteilung verhindern – so argumentierte schon Montesquieu 1748."},
+{m:"mix",t:"or",q:"Bringe die Ereignisse des gesamten Kapitels in die richtige Reihenfolge.",items:["1740: Friedrich II. besteigt den preußischen Thron","1748: Montesquieu veröffentlicht &bdquo;Vom Geist der Gesetze&ldquo;","1783: Kant beantwortet die Frage &bdquo;Was ist Aufklärung?&ldquo;","1789: Beginn der Französischen Revolution","1793: Hinrichtung Ludwigs XVI.","1795: Das Direktorium übernimmt die Regierung"],e:"Erst die Ideen, dann die Umsetzung: Die Aufklärung ging der Revolution um Jahrzehnte voraus."}
+
+];
+
+/* =========================================================
+   LOGIK
+   ========================================================= */
+var S = {mod:null, list:[], i:0, right:0, locked:false, orderPos:0};
+var ST = load();
+
+function load(){
+  try{
+    var r = localStorage.getItem("bastilleQuest");
+    if(r){ return JSON.parse(r); }
+  }catch(e){}
+  return {xp:0, days:0, last:"", done:{}};
+}
+function save(){
+  try{ localStorage.setItem("bastilleQuest", JSON.stringify(ST)); }catch(e){}
+}
+function today(){ var d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function touchDay(){
+  var t = today();
+  if(ST.last !== t){
+    var y=new Date(); y.setDate(y.getDate()-1);
+    var yd = y.getFullYear()+"-"+(y.getMonth()+1)+"-"+y.getDate();
+    ST.days = (ST.last === yd) ? (ST.days+1) : 1;
+    ST.last = t;
+    save();
+  }
+}
+
+function shuffle(a){
+  for(var i=a.length-1;i>0;i--){
+    var j=Math.floor(Math.random()*(i+1));
+    var t=a[i]; a[i]=a[j]; a[j]=t;
+  }
+  return a;
+}
+
+function go(id){
+  var s=document.querySelectorAll(".screen");
+  for(var i=0;i<s.length;i++){ s[i].classList.remove("on"); }
+  document.getElementById(id).classList.add("on");
+  window.scrollTo(0,0);
+  if(id==="sStart"||id==="sMods"){ paint(); }
+}
+
+function paint(){
+  document.getElementById("xpOut").textContent = ST.xp;
+  document.getElementById("dayOut").textContent = ST.days;
+  var n=0;
+  for(var i=0;i<MODS.length;i++){ if(ST.done[MODS[i].id]){ n++; } }
+  document.getElementById("modOut").textContent = n+"/"+MODS.length;
+
+  var h="";
+  for(var k=0;k<MODS.length;k++){
+    var m=MODS[k];
+    var cnt=0;
+    for(var q=0;q<Q.length;q++){ if(Q[q].m===m.id){ cnt++; } }
+    var done = ST.done[m.id];
+    h += '<button class="mod" onclick="start(&#39;'+m.id+'&#39;)">'
+       +   '<span class="ic">'+m.ic+'</span>'
+       +   '<span class="tx"><b>'+m.name+'</b><span>'+cnt+' Aufgaben &middot; '+m.src+'</span></span>'
+       +   '<span class="badge'+(done?' done':'')+'">'+(done?done+"%":"Neu")+'</span>'
+       + '</button>';
+  }
+  document.getElementById("modList").innerHTML=h;
+}
+
+function prepare(src){
+  /* Kopie anlegen und Antworten mischen - die richtige Antwort darf nie
+     immer an derselben Stelle stehen. */
+  var q = {};
+  for(var k in src){ if(src.hasOwnProperty(k)){ q[k]=src[k]; } }
+  if(q.t==="mc" || q.t==="cl"){
+    var pack=[];
+    for(var i=0;i<src.o.length;i++){ pack.push({tx:src.o[i], ok:(i===src.c)}); }
+    shuffle(pack);
+    q.o=[]; q.c=0;
+    for(var j=0;j<pack.length;j++){ q.o.push(pack[j].tx); if(pack[j].ok){ q.c=j; } }
+  } else if(q.t==="tf"){
+    q.o=["Wahr","Falsch"];
+    q.c = src.c ? 0 : 1;
+  } else if(q.t==="or"){
+    q.sol = src.items.slice();
+    q.o = shuffle(src.items.slice());
+  }
+  return q;
+}
+
+function start(id){
+  touchDay();
+  S.mod=id; S.i=0; S.right=0; S.locked=false;
+  var pool=[];
+  for(var i=0;i<Q.length;i++){
+    if(id==="ALL" || Q[i].m===id){ pool.push(Q[i]); }
+  }
+  shuffle(pool);
+  if(id==="ALL" && pool.length>25){ pool=pool.slice(0,25); }
+  S.list=[];
+  for(var j=0;j<pool.length;j++){ S.list.push(prepare(pool[j])); }
+  go("sQuiz");
+  render();
+}
+
+function modName(id){
+  for(var i=0;i<MODS.length;i++){ if(MODS[i].id===id){ return MODS[i].ic+" "+MODS[i].name; } }
+  return "🎲 Gemischt";
+}
+function typeName(t){
+  if(t==="tf"){ return "✔ Wahr oder falsch"; }
+  if(t==="cl"){ return "✎ Lückentext"; }
+  if(t==="or"){ return "↕ Reihenfolge"; }
+  return "◉ Auswahl";
+}
+
+function render(){
+  var q=S.list[S.i];
+  S.locked=false; S.orderPos=0;
+  document.getElementById("qPos").textContent = "Frage "+(S.i+1)+" / "+S.list.length;
+  document.getElementById("qScore").innerHTML = "✅ "+S.right+" richtig";
+  document.getElementById("qFill").style.width = ((S.i)/S.list.length*100)+"%";
+
+  var h = '<div class="pills"><span class="pill">'+modName(q.m)+'</span><span class="pill t">'+typeName(q.t)+'</span></div>';
+  h += '<div class="q">'+q.q+'</div><div class="opts" id="optBox">';
+  var keys="ABCDEFGH";
+  for(var i=0;i<q.o.length;i++){
+    var left = (q.t==="or") ? '<span class="k">&bull;</span>' : '<span class="k">'+keys.charAt(i)+'</span>';
+    h += '<button class="opt" id="o'+i+'" onclick="pick('+i+')">'+left+'<span class="lbl">'+q.o[i]+'</span><span class="num" id="n'+i+'"></span><span class="mk" id="m'+i+'"></span></button>';
+  }
+  h += '</div><div id="fbBox"></div>';
+  document.getElementById("qCard").innerHTML=h;
+}
+
+function pick(i){
+  var q=S.list[S.i];
+  if(S.locked){ return; }
+
+  if(q.t==="or"){
+    var want = q.sol[S.orderPos];
+    if(q.o[i]===want){
+      var b=document.getElementById("o"+i);
+      b.classList.add("good"); b.disabled=true;
+      document.getElementById("m"+i).innerHTML="✅";
+      document.getElementById("n"+i).textContent=(S.orderPos+1)+".";
+      S.orderPos++;
+      if(S.orderPos===q.sol.length){ finish(true,q); }
+    } else {
+      var w=document.getElementById("o"+i);
+      w.classList.add("bad");
+      document.getElementById("m"+i).innerHTML="❌";
+      revealOrder(q);
+      finish(false,q);
+    }
+    return;
+  }
+
+  S.locked=true;
+  var ok = (i===q.c);
+  for(var k=0;k<q.o.length;k++){
+    var el=document.getElementById("o"+k);
+    el.disabled=true;
+    if(k===q.c){ el.classList.add("good"); document.getElementById("m"+k).innerHTML="✅"; }
+    else if(k===i){ el.classList.add("bad"); document.getElementById("m"+k).innerHTML="❌"; }
+    else { el.classList.add("dim"); }
+  }
+  finish(ok,q);
+}
+
+function revealOrder(q){
+  for(var p=0;p<q.sol.length;p++){
+    for(var i=0;i<q.o.length;i++){
+      if(q.o[i]===q.sol[p]){ document.getElementById("n"+i).textContent=(p+1)+"."; }
+    }
+  }
+  for(var j=0;j<q.o.length;j++){ document.getElementById("o"+j).disabled=true; }
+}
+
+function finish(ok,q){
+  S.locked=true;
+  if(ok){ S.right++; ST.xp+=10; save(); }
+  document.getElementById("qScore").innerHTML = "✅ "+S.right+" richtig";
+  var right = (q.t==="or") ? "" : (q.t==="tf" ? q.o[q.c] : q.o[q.c]);
+  var head = ok ? "✅ Richtig!" : ("❌ Falsch!" + (right ? " Richtig: "+right : " Siehe die Nummern."));
+  var h = '<div class="fb '+(ok?"ok":"no")+'"><b>'+head+'</b><i>'+(q.e||"")+'</i></div>';
+  h += '<button class="btn next" onclick="nextQ()">'+(S.i+1<S.list.length?"Weiter &rarr;":"Auswertung &rarr;")+'</button>';
+  document.getElementById("fbBox").innerHTML=h;
+  document.getElementById("fbBox").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function nextQ(){
+  S.i++;
+  if(S.i<S.list.length){ render(); } else { end(); }
+}
+
+function end(){
+  var pct = Math.round(S.right/S.list.length*100);
+  if(S.mod!=="ALL"){
+    if(!ST.done[S.mod] || ST.done[S.mod]<pct){ ST.done[S.mod]=pct; }
+    save();
+  }
+  document.getElementById("eRight").textContent = S.right+"/"+S.list.length;
+  document.getElementById("eQuote").textContent = pct+"%";
+  document.getElementById("eXp").textContent = ST.xp;
+  var ico="💪", t="Weiter üben!", s="Schau dir die Erklärungen noch einmal an.";
+  if(pct>=90){ ico="🏆"; t="Stark!"; s="Das sitzt. Du kannst in die Prüfung gehen."; }
+  else if(pct>=70){ ico="👏"; t="Gut gemacht!"; s="Fast alles sicher – die Reste noch einmal durchgehen."; }
+  else if(pct>=50){ ico="🙂"; t="Solide Basis"; s="Spiel das Modul gleich noch einmal, dann sitzt es."; }
+  document.getElementById("eIco").innerHTML=ico;
+  document.getElementById("eTitle").textContent=t;
+  document.getElementById("eSub").textContent=s;
+  document.getElementById("qFill").style.width="100%";
+  go("sEnd");
+}
+
+function again(){ start(S.mod); }
+function quit(){ if(confirm("Runde wirklich abbrechen?")){ go("sMods"); } }
+function resetAll(){
+  if(confirm("Wirklich allen Fortschritt löschen?")){
+    ST={xp:0,days:0,last:"",done:{}}; save(); paint();
+  }
+}
+
+paint();
+</script>
+</body>
+</html>
